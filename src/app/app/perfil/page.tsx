@@ -249,7 +249,18 @@ export default function PerfilPage() {
         </Link>
       </div>
 
-      <p className="text-xs text-gray-400 text-center mt-12">
+      <button
+        onClick={async () => {
+          if (!confirm('Sair da conta? Seus dados ficam salvos no servidor, mas voce vai precisar acessar de outro jeito pra voltar.')) return;
+          await fetch('/api/session/logout', { method: 'POST' });
+          window.location.href = '/';
+        }}
+        className="w-full mt-8 text-center text-sm text-red-500 hover:text-red-700 underline transition"
+      >
+        Sair do app
+      </button>
+
+      <p className="text-xs text-gray-400 text-center mt-6">
         Grana v0.1 — beta
       </p>
     </main>
