@@ -1,0 +1,477 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+type MesDisponivel = {
+  year: number;
+  month: number;
+  receita: number;
+  despesa: number;
+  lucro: number;
+  txCount: number;
+  generatedAt?: string;
+};
+
+type Contador = {
+  nome?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+};
+
+function brl(n: number) {
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+/**
+ * Limpa um numero de telefone deixando so digitos com 55 na frente se nao tiver.
+ */
+function normalizeWhatsapp(raw: string): string {
+  let n = raw.replace(/\D/g, '');
+  if (!n.startsWith('55') && n.length >= 10) n = '55' + n;
+  return n;
+}
+
+export default function RelatoriosPage() {
+  const router = useRouter();
+  const [meses, setMeses] = useState<MesDisponivel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [gerando, setGerando] = useState<string | null>(null);
+  const [contador, setContador] = useState<Contador | null>(null);
+  const [modalAberto, setModalAberto] = useState<{
+    monthStr: string;
+    year: number;
+    month: number;
+    fileName: string;
+    pdfBlob: Blob;
+    nomeUser: string;
+  } | null>(null);
+
+  async function load() {
+    setLoading(true);
+    // Pega dados do user
+    fetch('/api/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setContador({
+            nome: d.user.contadorNome,
+            whatsapp: d.user.contadorWhatsapp,
+            email: d.user.contadorEmail,
+          });
+        }
+      });
+
+    // Lista de meses com transacoes
+    const now = new Date();
+    const lista: MesDisponivel[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      try {
+        const res = await fetch(`/api/dashboard?month=${month}`);
+        const data = await res.json();
+        if (!data.empty) {
+          lista.push({
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            receita: data.receita,
+            despesa: data.despesas,
+            lucro: data.sobrou,
+            txCount: data.txCount,
+            generatedAt: localStorage.getItem(`relatorio_${month}_geradoEm`) ?? undefined,
+          });
+        }
+      } catch (e) {
+        // ignora
+      }
+    }
+    setMeses(lista);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function gerarPDFBlob(year: number, month: number) {
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const res = await fetch(`/api/relatorio?month=${monthStr}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'erro');
+    const { gerarRelatorioPDF } = await import('@/lib/report-pdf');
+    const doc = gerarRelatorioPDF(data);
+    const fileName = `Relatorio_${data.user.name?.replace(/\s+/g, '_') ?? 'cliente'}_${MESES[month - 1]}_${year}.pdf`;
+    const blob = doc.output('blob');
+    return { doc, blob, fileName, nomeUser: data.user.name ?? 'cliente' };
+  }
+
+  async function abrirEnvio(year: number, month: number) {
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    setGerando(monthStr);
+    try {
+      const { blob, fileName, nomeUser } = await gerarPDFBlob(year, month);
+      localStorage.setItem(`relatorio_${monthStr}_geradoEm`, new Date().toISOString());
+      setModalAberto({ monthStr, year, month, fileName, pdfBlob: blob, nomeUser });
+    } catch (e: any) {
+      alert('Erro: ' + (e.message ?? 'desconhecido'));
+    }
+    setGerando(null);
+    load();
+  }
+
+  async function baixar(year: number, month: number) {
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    setGerando(monthStr);
+    try {
+      const { doc, fileName } = await gerarPDFBlob(year, month);
+      doc.save(fileName);
+      localStorage.setItem(`relatorio_${monthStr}_geradoEm`, new Date().toISOString());
+    } catch (e: any) {
+      alert('Erro: ' + (e.message ?? 'desconhecido'));
+    }
+    setGerando(null);
+    load();
+  }
+
+  if (loading) {
+    return (
+      <main className="flex-1 p-5">
+        <div className="text-gray-400">Carregando...</div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="flex-1 p-5">
+      <button
+        onClick={() => router.back()}
+        className="text-gray-500 mb-4 w-10 h-10 rounded-full bg-white shadow-soft flex items-center justify-center hover:scale-110 transition"
+      >
+        ←
+      </button>
+
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold text-gray-900">📊 Relatorios</h1>
+        <p className="text-sm text-gray-500">
+          Gere relatorios mensais pra mandar pro contador.
+        </p>
+      </div>
+
+      {/* Status do contador */}
+      {contador?.nome ? (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-3 mb-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">👨‍💼</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-green-900 text-sm truncate">
+                Contador: {contador.nome}
+              </div>
+              <div className="text-xs text-green-700">
+                {contador.whatsapp && '📱 ' + contador.whatsapp}
+                {contador.whatsapp && contador.email && ' · '}
+                {contador.email && '📧 ' + contador.email}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 mb-4 text-sm">
+          <div className="flex items-start gap-2">
+            <span className="text-xl shrink-0">💡</span>
+            <div className="flex-1">
+              <div className="font-bold text-yellow-900 mb-1">Cadastre seu contador</div>
+              <div className="text-xs text-yellow-800 mb-2">
+                Cadastre uma vez e o app envia o relatorio direto pra ele. Ou escolha um dos nossos parceiros.
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href="/app/perfil"
+                  className="inline-block bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg"
+                >
+                  Cadastrar meu →
+                </Link>
+                <Link
+                  href="/app/parceiros"
+                  className="inline-block bg-white border border-yellow-600 text-yellow-700 text-xs font-bold px-3 py-1.5 rounded-lg"
+                >
+                  Ver parceiros →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {meses.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4 animate-float">📥</div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Sem transacoes ainda
+          </h2>
+          <p className="text-sm text-gray-600 mb-6 px-6">
+            Importe um extrato pra gerar seu primeiro relatorio.
+          </p>
+          <Link
+            href="/onboarding/upload"
+            className="inline-block bg-gradient-cool text-white font-bold py-4 px-8 rounded-3xl shadow-glow-cool"
+          >
+            Importar extrato
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {meses.map((m) => {
+            const monthStr = `${m.year}-${String(m.month).padStart(2, '0')}`;
+            const isGerando = gerando === monthStr;
+            return (
+              <div
+                key={monthStr}
+                className="bg-white border-2 border-gray-100 rounded-2xl p-4 shadow-soft"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="font-bold text-lg text-gray-900 capitalize">
+                      {MESES[m.month - 1]} {m.year}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {m.txCount} {m.txCount === 1 ? 'transacao' : 'transacoes'}
+                      {m.generatedAt && ` · gerado em ${new Date(m.generatedAt).toLocaleDateString('pt-BR')}`}
+                    </div>
+                  </div>
+                  {m.generatedAt && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold whitespace-nowrap">
+                      ✓ ja gerado
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+                  <div className="bg-green-50 rounded-xl p-2">
+                    <div className="text-xs text-green-700 font-semibold">Receita</div>
+                    <div className="text-sm font-bold text-green-800">{brl(m.receita)}</div>
+                  </div>
+                  <div className="bg-orange-50 rounded-xl p-2">
+                    <div className="text-xs text-orange-700 font-semibold">Despesa</div>
+                    <div className="text-sm font-bold text-orange-800">{brl(m.despesa)}</div>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-2">
+                    <div className="text-xs text-purple-700 font-semibold">Lucro</div>
+                    <div className="text-sm font-bold text-purple-800">{brl(m.lucro)}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => baixar(m.year, m.month)}
+                    disabled={isGerando}
+                    className="bg-white border-2 border-gray-300 hover:border-secondary-400 text-gray-800 font-semibold py-3 rounded-xl text-sm transition active:scale-95 disabled:opacity-50"
+                  >
+                    {isGerando ? '⏳' : '⬇️ Baixar PDF'}
+                  </button>
+                  <button
+                    onClick={() => abrirEnvio(m.year, m.month)}
+                    disabled={isGerando}
+                    className="bg-gradient-cool text-white font-bold py-3 rounded-xl text-sm shadow-glow-cool transition active:scale-95 disabled:opacity-50"
+                  >
+                    {isGerando ? '⏳ Gerando...' : '📤 Enviar'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mt-6">
+        <div className="flex items-start gap-2">
+          <span className="text-xl shrink-0">💡</span>
+          <div className="text-xs text-blue-800 leading-relaxed">
+            <span className="font-bold">Como mandar pro contador:</span> toca em &quot;Enviar&quot; e
+            escolhe WhatsApp, email ou outro app. O PDF vai certinho com tudo organizado:
+            receitas, despesas dedutiveis, retiradas, DAS e observacoes.
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de envio */}
+      {modalAberto && (
+        <ModalEnvio
+          modal={modalAberto}
+          contador={contador}
+          onClose={() => setModalAberto(null)}
+        />
+      )}
+    </main>
+  );
+}
+
+function ModalEnvio({
+  modal,
+  contador,
+  onClose,
+}: {
+  modal: {
+    monthStr: string;
+    year: number;
+    month: number;
+    fileName: string;
+    pdfBlob: Blob;
+    nomeUser: string;
+  };
+  contador: Contador | null;
+  onClose: () => void;
+}) {
+  const periodo = `${MESES[modal.month - 1]} ${modal.year}`;
+  const mensagemBase = `Oi! Segue o relatorio de ${periodo} - ${modal.nomeUser}. Qualquer coisa avisa!`;
+
+  function baixarLocal() {
+    const url = URL.createObjectURL(modal.pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = modal.fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function compartilhar() {
+    try {
+      const file = new File([modal.pdfBlob], modal.fileName, { type: 'application/pdf' });
+      if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+        await (navigator as any).share({
+          files: [file],
+          title: `Relatorio ${periodo}`,
+          text: mensagemBase,
+        });
+      } else {
+        baixarLocal();
+        alert('Compartilhamento direto nao disponivel nesse navegador. PDF baixado.');
+      }
+    } catch (e) {
+      // ignorou
+    }
+  }
+
+  function abrirWhatsapp() {
+    if (!contador?.whatsapp) return;
+    const numero = normalizeWhatsapp(contador.whatsapp);
+    // Baixa o PDF primeiro porque o WhatsApp Web nao aceita anexo via URL
+    baixarLocal();
+    const msg = encodeURIComponent(
+      `${mensagemBase}\n\n(O PDF foi baixado no seu dispositivo - anexa essa mensagem)`,
+    );
+    setTimeout(() => {
+      window.open(`https://wa.me/${numero}?text=${msg}`, '_blank');
+    }, 500);
+  }
+
+  function abrirEmail() {
+    if (!contador?.email) return;
+    baixarLocal();
+    const subj = encodeURIComponent(`Relatorio ${periodo} - ${modal.nomeUser}`);
+    const body = encodeURIComponent(
+      `${mensagemBase}\n\nO arquivo foi baixado - anexar a este email.\n\n--\nGerado pelo app Grana`,
+    );
+    setTimeout(() => {
+      window.open(`mailto:${contador.email}?subject=${subj}&body=${body}`, '_blank');
+    }, 500);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 z-40 flex items-end justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-md rounded-t-3xl p-5 pb-8 animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+        style={{ animationDuration: '0.3s' }}
+      >
+        <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+
+        <h2 className="text-xl font-extrabold text-gray-900 mb-1">📤 Enviar relatorio</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          {periodo} · {modal.fileName}
+        </p>
+
+        {contador?.nome ? (
+          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3 mb-4 flex items-center gap-2">
+            <span className="text-xl">👨‍💼</span>
+            <div className="text-sm">
+              <div className="font-bold text-purple-900">{contador.nome}</div>
+              <div className="text-xs text-purple-700">seu contador cadastrado</div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 mb-4 text-xs text-yellow-900">
+            💡 <span className="font-bold">Dica:</span> cadastre seu contador no perfil pra enviar com 1 toque.
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {/* WhatsApp do contador */}
+          {contador?.whatsapp && (
+            <button
+              onClick={abrirWhatsapp}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95"
+            >
+              📱 Enviar pro WhatsApp do contador
+            </button>
+          )}
+
+          {/* Email do contador */}
+          {contador?.email && (
+            <button
+              onClick={abrirEmail}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95"
+            >
+              📧 Enviar pro email do contador
+            </button>
+          )}
+
+          {/* Compartilhar genérico */}
+          <button
+            onClick={compartilhar}
+            className="w-full bg-gradient-cool text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95"
+          >
+            📲 Compartilhar (outros apps)
+          </button>
+
+          {/* Download */}
+          <button
+            onClick={baixarLocal}
+            className="w-full bg-white border-2 border-gray-300 text-gray-800 font-semibold py-4 rounded-2xl transition active:scale-95"
+          >
+            ⬇️ So baixar
+          </button>
+        </div>
+
+        {!contador?.whatsapp && !contador?.email && (
+          <Link
+            href="/app/perfil"
+            className="block text-center text-xs text-secondary-600 underline mt-4"
+          >
+            + Cadastrar contador no perfil
+          </Link>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full text-gray-500 py-3 mt-2 text-sm"
+        >
+          Cancelar
+        </button>
+
+        <p className="text-xs text-gray-400 text-center mt-3 leading-relaxed">
+          ⚠️ O PDF vai ser baixado no seu dispositivo. Anexa na mensagem do WhatsApp ou email.
+        </p>
+      </div>
+    </div>
+  );
+}

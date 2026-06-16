@@ -1,0 +1,203 @@
+// Prisma schema do app Grana
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  name          String?
+  profissao     String?
+
+  regime        String?
+  meiAtividade  String?
+  meiInicio     DateTime?
+  simplesAnexo  String?
+  simplesInicio DateTime?
+
+  contadorNome     String?
+  contadorWhatsapp String?
+  contadorEmail    String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+  uploads      Upload[]
+  dasPayments  DASPayment[]
+  indicacoes   Indicacao[]
+  avaliacoes   Avaliacao[]
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date            DateTime
+  amount          Float
+  description     String
+  contraparte     String?
+  contraparteDoc  String?  // CPF/CNPJ apenas digitos, quando disponivel no extrato
+
+  type            String
+  category        String
+  isDeductible    Boolean  @default(false)
+  isPersonal      Boolean  @default(false)
+  isRecurring     Boolean  @default(false)
+
+  source          String
+  uploadId        String?
+  upload          Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+
+  aiSuggested     Boolean  @default(false)
+  userConfirmed   Boolean  @default(false)
+  notes           String?
+  attachmentUrl   String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([userId, contraparteDoc])
+}
+
+model Upload {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fileName     String
+  fileSize     Int
+  bankDetected String?
+  status       String
+  errorMsg     String?
+  rawText      String?
+  txCount      Int      @default(0)
+
+  transactions Transaction[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DASPayment {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  month     Int
+  year      Int
+  value     Float
+  dueDate   DateTime
+  paidAt    DateTime?
+  proofUrl  String?
+  notes     String?
+
+  regime    String?
+  rbt12     Float?
+  aliquota  Float?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId, dueDate])
+}
+
+model ContadorParceiro {
+  id            String   @id @default(cuid())
+  nome          String
+  foto          String?
+  especialidade String?
+  cidade        String?
+  whatsapp      String?
+  email         String?
+  preco         String?
+  ativo         Boolean  @default(true)
+  ordem         Int      @default(0)
+  bio           String?  // pequena descricao
+
+  // Cache calculado da media e contagem (atualizado quando avaliacao e criada)
+  notaMedia     Float?
+  notaCount     Int      @default(0)
+
+  indicacoes    Indicacao[]
+  avaliacoes    Avaliacao[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Indicacao {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parceiroId  String
+  parceiro    ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+
+  status      String           @default("enviada") // enviada | contato | fechou | desistiu
+  notes       String?
+
+  // Quando foi convertida em avaliacao (pra nao perguntar 2 vezes)
+  avaliadaEm  DateTime?
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([parceiroId])
+  @@index([userId, avaliadaEm])
+}
+
+model Avaliacao {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parceiroId  String
+  parceiro    ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+
+  nota        Int              // 1 a 5
+  comentario  String?          // ate 200 chars
+  oculta      Boolean          @default(false) // pra moderacao
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([userId, parceiroId])
+  @@index([parceiroId])
+}
+
+// Telemetria por upload: quantas txs cada camada do classificador resolveu,
+// quantas chamadas de IA aconteceram, e quantas o usuario corrigiu depois.
+// Usado pra ajustar threshold da IA e melhorar heuristica com base em dados reais.
+model ClassificationMetric {
+  id            String   @id @default(cuid())
+  userId        String
+  uploadId      String?
+
+  totalTxs      Int
+  fromHistory   Int      // camada 1: match historico/recorrencia/documento
+  fromHeuristic Int      // camada 2: regras de palavra-chave
+  fromAI        Int      // camada 3: Claude
+
+  aiCallsCount  Int      @default(0) // quantas chamadas (batches) foram pra IA
+  aiTxsCount    Int      @default(0) // total de txs enviadas pra IA
+
+  correctedTxs  Int      @default(0) // quantas o usuario alterou depois
+  correctedAt   DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([uploadId])
+}

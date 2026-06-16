@@ -1,0 +1,37 @@
+# Configuração do deploy SmartMEI no Netlify.
+#
+# Pontos chave:
+# - Plugin oficial @netlify/plugin-nextjs cuida do roteamento de Server
+#   Components, route handlers e ISR.
+# - postinstall do package.json roda `prisma generate`. Só precisamos
+#   garantir os binarios do Linux (rhel-openssl-3.0.x) em prisma/schema.prisma.
+# - SQLite NAO funciona em Functions (FS efêmero). DATABASE_URL precisa
+#   apontar pra Postgres gerenciado (Neon, Supabase, Railway, RDS).
+# - Migrações do banco rodam fora do build do Netlify (script separado ou
+#   localmente apontando pro DB de produção): `npx prisma migrate deploy`.
+
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  # Versão consistente com .nvmrc; Netlify aceita ambos, deixar redundante
+  # ajuda quando alguém roda o CLI fora do contexto do repo.
+  NODE_VERSION = "20"
+  # Evita warnings do npm com peer deps recentes do Next 14.
+  NPM_FLAGS    = "--no-audit --no-fund"
+  # Prisma baixa o engine pelo postinstall; força cache previsível.
+  PRISMA_HIDE_UPDATE_MESSAGE = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Headers basicos de segurança aplicados em todas as rotas.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options           = "SAMEORIGIN"
+    X-Content-Type-Options    = "nosniff"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Permissions-Policy        = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
