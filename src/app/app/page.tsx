@@ -127,6 +127,7 @@ export default function AppHome() {
         <div className="text-center mt-8 mb-6">
           <div className="text-7xl mb-4 animate-float">💸</div>
           <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Vamos comecar!</h1>
+          <p className="text-secondary-600 text-xs font-semibold mb-1">✨ Sua empresa no caminho certo</p>
           <p className="text-gray-600 text-sm capitalize">{monthName(new Date())}</p>
         </div>
 
@@ -159,6 +160,7 @@ export default function AppHome() {
     <main className="flex-1 p-5">
       <div className="mb-6 animate-pop-in">
         <h1 className="text-2xl font-extrabold text-gray-900">Resumo</h1>
+        <p className="text-secondary-600 text-xs font-semibold">✨ Sua empresa no caminho certo</p>
         <p className="text-gray-500 capitalize text-sm">{monthName(new Date())}</p>
       </div>
 
