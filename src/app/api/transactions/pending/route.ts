@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Lista transacoes que precisam de revisao manual.
  * Sao as que vieram de PDF/share e ainda nao foram confirmadas pelo usuario.

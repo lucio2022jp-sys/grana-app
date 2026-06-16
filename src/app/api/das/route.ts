@@ -10,6 +10,8 @@ import {
 import { LIMITE_MEI, ANTECEDENCIA_ALERTA, URGENCIA_ALERTA } from '@/lib/simples';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const createSchema = z.object({
   month: z.number().min(1).max(12),
   year: z.number().min(2020).max(2050),

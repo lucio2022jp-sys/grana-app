@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Detalhe de um import.
  */

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 import { isVisivelPublico } from '@/lib/parceiros';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Lista parceiros publicos pra MEI escolher.
  * Aplica regras de visibilidade (esconde quem tem nota baixa).

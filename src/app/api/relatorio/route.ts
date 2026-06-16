@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Retorna TODOS os dados necessarios pra montar o relatorio mensal.
  * Usado pela tela de relatorios pra gerar o PDF.

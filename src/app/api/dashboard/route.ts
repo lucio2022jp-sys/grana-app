@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 const MEI_LIMIT = 81000;
 
 export async function GET(req: NextRequest) {

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { isAdmin } from '@/lib/admin-auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const updateSchema = z.object({
   nome: z.string().optional(),
   foto: z.string().optional(),

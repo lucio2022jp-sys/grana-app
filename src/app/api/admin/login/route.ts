@@ -7,6 +7,8 @@ import {
 } from '@/lib/admin-auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const schema = z.object({ password: z.string() });
 
 export async function POST(req: NextRequest) {

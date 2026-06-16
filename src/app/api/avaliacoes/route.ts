@@ -4,6 +4,8 @@ import { getUserCookieName } from '@/lib/session';
 import { recalcularNotasParceiro } from '@/lib/parceiros';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const createSchema = z.object({
   parceiroId: z.string(),
   nota: z.number().min(1).max(5),

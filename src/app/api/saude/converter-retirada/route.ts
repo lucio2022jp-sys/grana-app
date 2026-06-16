@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const schema = z.object({
   month: z.string().optional(), // YYYY-MM, default mes corrente
   ids: z.array(z.string()).optional(), // se quiser especificar quais (default = todas pessoais do mes)

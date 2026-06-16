@@ -9,6 +9,7 @@ import { rateLimit, rateLimitKey } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 // Upload e caro (parser + IA). Limita pra evitar abuso e custo descontrolado.
 const UPLOAD_LIMIT = 10;

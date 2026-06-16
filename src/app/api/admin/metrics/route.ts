@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { isAdmin } from '@/lib/admin-auth';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Metricas agregadas do classificador. Usado pra ajustar threshold da IA
  * e medir o quanto a heuristica esta acertando.

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getCookieOptions, getUserCookieName } from '@/lib/session';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const updateSchema = z.object({
   profissao: z.string().optional(),
   name: z.string().optional(),

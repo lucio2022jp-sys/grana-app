@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserCookieName } from '@/lib/session';
 import { detectarRecorrentes, marcarRecorrentes } from '@/lib/recurring';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Lista pagamentos/recebimentos recorrentes detectados.
  */

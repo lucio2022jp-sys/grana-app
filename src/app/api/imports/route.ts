@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Lista historico de imports do usuario (uploads de extrato).
  * Retorna ordenado do mais recente pro mais antigo, ate 100 registros.
