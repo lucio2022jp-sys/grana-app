@@ -26,7 +26,12 @@ export async function GET(req: NextRequest) {
   if (!uid) return NextResponse.json({ user: null });
 
   const user = await prisma.user.findUnique({ where: { id: uid } });
-  return NextResponse.json({ user });
+  const response = NextResponse.json({ user });
+  // Renova o cookie a cada visita pra esticar a expiracao (rolling session)
+  if (user) {
+    response.cookies.set(cookieName, user.id, getCookieOptions());
+  }
+  return response;
 }
 
 export async function POST(req: NextRequest) {

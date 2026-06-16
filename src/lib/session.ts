@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 import { prisma } from './db';
 
 const COOKIE_NAME = 'grana_uid';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 10; // 10 anos (efetivamente permanente)
 
 export async function getOrCreateUser() {
   const store = cookies();
@@ -36,5 +36,6 @@ export function getCookieOptions() {
     sameSite: 'lax' as const,
     path: '/',
     maxAge: COOKIE_MAX_AGE,
+    secure: process.env.NODE_ENV === 'production',
   };
 }
