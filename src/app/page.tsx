@@ -23,7 +23,7 @@ export default async function HomePage() {
         {/* Badge superior */}
         <div className="bg-white/80 backdrop-blur-sm border border-white rounded-full px-4 py-1.5 mb-6 shadow-soft animate-pop-in">
           <span className="text-xs font-semibold text-secondary-600">
-            ✨ MEI / Autonomo / Freelancer
+            ✨ Sua empresa no caminho certo
           </span>
         </div>
 

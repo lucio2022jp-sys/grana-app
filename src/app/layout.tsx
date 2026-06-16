@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Grana - Saiba quanto voce ganha de verdade',
-  description: 'Controle financeiro pra autonomos, sem planilha e sem dor de cabeca.',
+  title: 'Grana - Sua empresa no caminho certo',
+  description: 'Sua empresa no caminho certo. Controle financeiro pra autonomos, sem planilha e sem dor de cabeca.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
