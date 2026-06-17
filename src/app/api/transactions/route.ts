@@ -17,31 +17,39 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const cookieName = getUserCookieName();
-  const uid = req.cookies.get(cookieName)?.value;
-  if (!uid) return NextResponse.json({ transactions: [] });
+  try {
+    const cookieName = getUserCookieName();
+    const uid = req.cookies.get(cookieName)?.value;
+    if (!uid) return NextResponse.json({ transactions: [] });
 
-  const url = new URL(req.url);
-  const month = url.searchParams.get('month'); // YYYY-MM
-  const type = url.searchParams.get('type');
+    const url = new URL(req.url);
+    const month = url.searchParams.get('month'); // YYYY-MM
+    const type = url.searchParams.get('type');
 
-  const where: any = { userId: uid };
-  if (month) {
-    const [y, m] = month.split('-').map(Number);
-    where.date = {
-      gte: new Date(y, m - 1, 1),
-      lt: new Date(y, m, 1),
-    };
+    const where: any = { userId: uid };
+    if (month) {
+      const [y, m] = month.split('-').map(Number);
+      where.date = {
+        gte: new Date(y, m - 1, 1),
+        lt: new Date(y, m, 1),
+      };
+    }
+    if (type) where.type = type;
+
+    const transactions = await prisma.transaction.findMany({
+      where,
+      orderBy: { date: 'desc' },
+      take: 200,
+    });
+
+    return NextResponse.json({ transactions });
+  } catch (e: any) {
+    console.error('[GET /api/transactions] erro:', e?.message, e?.code);
+    return NextResponse.json(
+      { error: 'db_error', message: e?.message ?? 'erro desconhecido', code: e?.code ?? null },
+      { status: 500 },
+    );
   }
-  if (type) where.type = type;
-
-  const transactions = await prisma.transaction.findMany({
-    where,
-    orderBy: { date: 'desc' },
-    take: 200,
-  });
-
-  return NextResponse.json({ transactions });
 }
 
 export async function POST(req: NextRequest) {

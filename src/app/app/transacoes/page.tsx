@@ -58,7 +58,14 @@ export default function TransacoesPage() {
     const url = filter === 'todas' ? '/api/transactions' : `/api/transactions?type=${filter}`;
     fetch(url)
       .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) {
+          let detail = '';
+          try {
+            const j = await r.json();
+            detail = j?.message ? ` — ${j.message}` : '';
+          } catch {}
+          throw new Error(`HTTP ${r.status}${detail}`);
+        }
         return r.json();
       })
       .then((d) => {
