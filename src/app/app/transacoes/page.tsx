@@ -50,14 +50,24 @@ export default function TransacoesPage() {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [filter, setFilter] = useState('todas');
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setErro(null);
     const url = filter === 'todas' ? '/api/transactions' : `/api/transactions?type=${filter}`;
     fetch(url)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        setTxs(d.transactions);
+        setTxs(d.transactions ?? []);
+        setLoading(false);
+      })
+      .catch((e) => {
+        setErro(e?.message ?? 'Erro ao carregar');
+        setTxs([]);
         setLoading(false);
       });
   }, [filter]);
@@ -96,7 +106,20 @@ export default function TransacoesPage() {
         </div>
       )}
 
-      {!loading && txs.length === 0 && (
+      {!loading && erro && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700">
+          <div className="font-semibold mb-1">Nao foi possivel carregar as transacoes</div>
+          <div className="opacity-80 mb-2">{erro}</div>
+          <button
+            onClick={() => setFilter((f) => f)}
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+          >
+            Tentar de novo
+          </button>
+        </div>
+      )}
+
+      {!loading && !erro && txs.length === 0 && (
         <div className="text-center py-16 text-gray-500">
           <div className="text-6xl mb-4">📭</div>
           <p className="font-medium">Nenhuma transacao por aqui ainda.</p>
