@@ -52,6 +52,8 @@ export default function RelatoriosPage() {
     pdfBlob: Blob;
     nomeUser: string;
   } | null>(null);
+  const [qrModal, setQrModal] = useState<{ url: string; qrDataUrl: string } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -60,6 +62,7 @@ export default function RelatoriosPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.user) {
+          setUserId(d.user.id);
           setContador({
             nome: d.user.contadorNome,
             whatsapp: d.user.contadorWhatsapp,
@@ -140,6 +143,21 @@ export default function RelatoriosPage() {
     load();
   }
 
+  async function abrirQR() {
+    if (!userId) {
+      alert('Aguarde os dados carregarem...');
+      return;
+    }
+    const url = `${window.location.origin}/relatorio-publico/${userId}`;
+    const QRCode = (await import('qrcode')).default;
+    const qrDataUrl = await QRCode.toDataURL(url, {
+      width: 320,
+      margin: 2,
+      color: { dark: '#111827', light: '#ffffff' },
+    });
+    setQrModal({ url, qrDataUrl });
+  }
+
   if (loading) {
     return (
       <main className="flex-1 p-5">
@@ -162,6 +180,13 @@ export default function RelatoriosPage() {
         <p className="text-sm text-gray-500">
           Gere relatorios mensais pra mandar pro contador.
         </p>
+        <button
+          onClick={abrirQR}
+          disabled={!userId}
+          className="mt-3 inline-flex items-center gap-2 bg-white border-2 border-gray-200 hover:border-secondary-400 text-gray-800 font-semibold py-2 px-3 rounded-xl text-xs transition active:scale-95 disabled:opacity-50"
+        >
+          🔗 QR pro contador
+        </button>
       </div>
 
       {/* Status do contador */}
@@ -308,7 +333,112 @@ export default function RelatoriosPage() {
           onClose={() => setModalAberto(null)}
         />
       )}
+
+      {/* Modal QR pro contador */}
+      {qrModal && (
+        <ModalQR
+          url={qrModal.url}
+          qrDataUrl={qrModal.qrDataUrl}
+          contador={contador}
+          onClose={() => setQrModal(null)}
+        />
+      )}
     </main>
+  );
+}
+
+function ModalQR({
+  url,
+  qrDataUrl,
+  contador,
+  onClose,
+}: {
+  url: string;
+  qrDataUrl: string;
+  contador: Contador | null;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert('Nao consegui copiar. Selecione e copie manualmente.');
+    }
+  }
+
+  function compartilharWhatsapp() {
+    if (!contador?.whatsapp) {
+      alert('Cadastre o whatsapp do seu contador primeiro.');
+      return;
+    }
+    const numero = contador.whatsapp.replace(/\D/g, '');
+    const numeroFinal = numero.startsWith('55') ? numero : '55' + numero;
+    const msg = encodeURIComponent(
+      `Oi! Esse e o link do meu relatorio mensal pelo Grana, sempre atualizado:\n\n${url}\n\nQualquer mes que vc precisar, e so abrir esse link.`,
+    );
+    window.open(`https://wa.me/${numeroFinal}?text=${msg}`, '_blank');
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-gray-900">🔗 Link pro contador</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Mande uma vez. Sempre que ele acessar, ve o relatorio atualizado.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="bg-gray-50 rounded-2xl p-4 mb-4 flex items-center justify-center">
+            <img src={qrDataUrl} alt="QR code" className="w-64 h-64" />
+          </div>
+
+          <div className="bg-gray-100 rounded-xl p-3 mb-3 break-all text-xs text-gray-700 font-mono">
+            {url}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={copiar}
+              className="bg-white border-2 border-gray-300 hover:border-secondary-400 text-gray-800 font-semibold py-3 rounded-xl text-sm transition active:scale-95"
+            >
+              {copied ? '✓ Copiado!' : '📋 Copiar link'}
+            </button>
+            <button
+              onClick={compartilharWhatsapp}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl text-sm transition active:scale-95"
+            >
+              📱 Whatsapp
+            </button>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800 leading-relaxed">
+            <span className="font-bold">Como funciona:</span> o contador acessa esse link
+            sempre que precisar e ve seu relatorio do mes atual, com receitas, despesas
+            dedutiveis, DAS e tudo mais. Tambem da pra imprimir/salvar em PDF.
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

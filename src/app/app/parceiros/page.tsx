@@ -20,15 +20,29 @@ export default function ParceirosPage() {
   const router = useRouter();
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [escolhendo, setEscolhendo] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelado = false;
     fetch('/api/parceiros')
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        setParceiros(d.parceiros);
+        if (cancelado) return;
+        setParceiros(d.parceiros ?? []);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelado) return;
+        setErro(e?.message ?? 'Erro ao carregar parceiros');
         setLoading(false);
       });
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
   async function escolher(parceiroId: string) {
@@ -63,6 +77,29 @@ export default function ParceirosPage() {
     return (
       <main className="flex-1 p-5">
         <div className="text-gray-400">Carregando...</div>
+      </main>
+    );
+  }
+
+  if (erro) {
+    return (
+      <main className="flex-1 p-5">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-500 mb-4 w-10 h-10 rounded-full bg-white shadow-soft flex items-center justify-center"
+        >
+          ←
+        </button>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800">
+          <p className="font-bold mb-1">Nao foi possivel carregar os parceiros</p>
+          <p className="text-xs opacity-80 mb-3">{erro}</p>
+          <button
+            onClick={() => location.reload()}
+            className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg"
+          >
+            Tentar de novo
+          </button>
+        </div>
       </main>
     );
   }
