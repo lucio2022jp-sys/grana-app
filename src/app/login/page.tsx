@@ -86,6 +86,12 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <div className="mt-6 text-center">
+        <Link href="/forgot" className="text-sm text-secondary-600 font-semibold underline">
+          Esqueci a senha
+        </Link>
+      </div>
+
       <div className="mt-8 text-center space-y-2">
         <p className="text-sm text-gray-600">
           Ainda nao tem conta?{' '}
