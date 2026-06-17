@@ -251,9 +251,9 @@ export default function PerfilPage() {
 
       <button
         onClick={async () => {
-          if (!confirm('Sair da conta? Seus dados ficam salvos no servidor, mas voce vai precisar acessar de outro jeito pra voltar.')) return;
+          if (!confirm('Sair da conta? Seus dados ficam salvos no servidor, voce so precisa entrar de novo pra voltar.')) return;
           await fetch('/api/session/logout', { method: 'POST' });
-          window.location.href = '/';
+          window.location.href = '/login';
         }}
         className="w-full mt-8 text-center text-sm text-red-500 hover:text-red-700 underline transition"
       >

@@ -1,36 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Middleware: garante que todo visitante chegue com um cookie de sessao.
+ * Middleware: protege rotas privadas.
  *
- * Quando DEMO_USER_ID esta setado, qualquer visitante sem cookie ja recebe
- * o id do user demo. Assim o app abre populado (transacoes, DAS, perfil)
- * sem precisar passar pelo onboarding.
+ * - Rotas publicas: /, /login, /signup, /demo, /onboarding/*, /admin/*, /api/*, /_next, etc.
+ * - Rotas privadas: /app/*  -> precisa de cookie grana_uid; senao redireciona pra /login.
  *
- * Em producao "real" deixe DEMO_USER_ID vazio: o middleware vira no-op e
- * cada usuario continua tendo conta propria via /api/me.
+ * O cookie da Bruna so e setado pela rota /demo (server-side), entao um visitante
+ * comum NAO ve mais os dados dela automaticamente.
  *
- * Roda no edge runtime, entao nao usa Prisma — so manipula cookie.
+ * Roda no edge runtime — nao usa Prisma, so cookie/url.
  */
 export function middleware(req: NextRequest) {
-  const demoId = process.env.DEMO_USER_ID;
-  if (!demoId) return NextResponse.next();
+  const { pathname } = req.nextUrl;
 
-  const existing = req.cookies.get('grana_uid')?.value;
-  if (existing) return NextResponse.next();
+  // Protege apenas /app/* (todas as telas privadas vivem dentro de /app)
+  if (pathname.startsWith('/app')) {
+    const uid = req.cookies.get('grana_uid')?.value;
+    if (!uid) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('next', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
 
-  const res = NextResponse.next();
-  res.cookies.set('grana_uid', demoId, {
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 365 * 10,
-    secure: process.env.NODE_ENV === 'production',
-  });
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
-  // Aplica em tudo menos assets estaticos e rotas internas do Next.
   matcher: ['/((?!_next/|favicon|.*\\.(?:png|jpg|jpeg|svg|webp|ico|css|js|woff2?)$).*)'],
 };

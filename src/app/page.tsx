@@ -55,16 +55,22 @@ export default async function HomePage() {
 
         <div className="w-full max-w-xs space-y-3 animate-slide-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
           <Link
-            href="/onboarding/profissao"
+            href="/signup"
             className="block w-full bg-gradient-cool text-white font-bold py-5 rounded-3xl shadow-glow-cool hover:scale-105 active:scale-95 transition text-center text-lg"
           >
-            Comecar gratis 🚀
+            Criar conta gratis 🚀
           </Link>
           <Link
-            href="/app"
-            className="block text-gray-700 font-medium underline text-sm pt-2"
+            href="/login"
+            className="block w-full bg-white border-2 border-secondary-200 text-secondary-700 font-bold py-4 rounded-3xl hover:scale-105 active:scale-95 transition text-center"
           >
             Ja tenho conta
+          </Link>
+          <Link
+            href="/demo"
+            className="block text-gray-500 font-medium underline text-xs pt-2 text-center"
+          >
+            Ver demonstracao
           </Link>
         </div>
 
