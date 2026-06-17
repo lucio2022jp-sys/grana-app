@@ -3,11 +3,20 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   const uid = cookies().get('grana_uid')?.value;
   if (uid) {
-    const count = await prisma.transaction.count({ where: { userId: uid } });
-    if (count > 0) redirect('/app');
+    try {
+      const count = await prisma.transaction.count({ where: { userId: uid } });
+      if (count > 0) redirect('/app');
+    } catch (e) {
+      // Banco indisponivel ou cookie invalido: cai pra landing publica.
+      // 'redirect' lanca um erro especial que NAO deve ser engolido aqui.
+      if (e && typeof e === 'object' && 'digest' in e) throw e;
+      console.error('[HomePage] erro consultando transactions:', e);
+    }
   }
 
   return (
