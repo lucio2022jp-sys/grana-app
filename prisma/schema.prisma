@@ -36,6 +36,22 @@ model User {
   dasPayments  DASPayment[]
   indicacoes   Indicacao[]
   avaliacoes   Avaliacao[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique // sha256 do token cru, hex; nunca armazenamos o token em texto
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  requestIp  String?
+  userAgent  String?
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Transaction {
@@ -201,4 +217,35 @@ model ClassificationMetric {
 
   @@index([userId, createdAt])
   @@index([uploadId])
+}
+
+// Memoria de correcao negativa: cada vez que o usuario altera uma classificacao
+// que veio da IA, gravamos o par (sugestao IA -> correcao usuario). Esses pares
+// alimentam o prompt da IA em uploads futuros, evitando repetir o mesmo erro.
+model ClassificationCorrection {
+  id              String   @id @default(cuid())
+  userId          String
+
+  // contexto da transacao (snapshot na hora da correcao)
+  description     String
+  contraparte     String?
+  contraparteDoc  String?
+  amount          Float
+
+  // o que a IA havia sugerido
+  aiType          String
+  aiCategory      String
+  aiIsDeductible  Boolean
+  aiIsPersonal    Boolean
+
+  // o que o usuario corrigiu pra
+  userType        String
+  userCategory    String
+  userIsDeductible Boolean
+  userIsPersonal  Boolean
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, contraparteDoc])
 }

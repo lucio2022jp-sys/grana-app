@@ -61,6 +61,33 @@ export async function PATCH(
     }
   }
 
+  // Memoria de correcao negativa: se a tx veio de sugestao da IA e o usuario
+  // alterou a classificacao, guarda o par (sugestao IA -> correcao usuario)
+  // pra alimentar o prompt em uploads futuros.
+  if (corrigiuClassificacao && tx.aiSuggested) {
+    try {
+      await prisma.classificationCorrection.create({
+        data: {
+          userId: uid,
+          description: tx.description,
+          contraparte: tx.contraparte,
+          contraparteDoc: tx.contraparteDoc,
+          amount: tx.amount,
+          aiType: tx.type,
+          aiCategory: tx.category,
+          aiIsDeductible: tx.isDeductible,
+          aiIsPersonal: tx.isPersonal,
+          userType: updated.type,
+          userCategory: updated.category,
+          userIsDeductible: updated.isDeductible,
+          userIsPersonal: updated.isPersonal,
+        },
+      });
+    } catch (err) {
+      console.error('Erro ao gravar ClassificationCorrection:', err);
+    }
+  }
+
   return NextResponse.json({ transaction: updated });
 }
 

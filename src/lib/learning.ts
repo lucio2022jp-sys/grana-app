@@ -392,3 +392,93 @@ export function historicoAsExemplos(historico: ClassificacaoConfirmada[], maxExe
 
   return `\n\nIMPORTANTE: O usuario ja confirmou estas classificacoes antes. Use como referencia pra manter consistencia:\n${linhas.join('\n')}`;
 }
+
+/**
+ * Memoria de correcao negativa: pares (sugestao_IA -> correcao_usuario) que
+ * o usuario alterou em uploads anteriores. Usado pra avisar a IA do erro
+ * antes que ela o repita.
+ */
+export type CorrecaoUsuario = {
+  description: string;
+  contraparte: string | null;
+  contraparteDoc: string | null;
+  amount: number;
+  aiType: string;
+  aiCategory: string;
+  aiIsDeductible: boolean;
+  aiIsPersonal: boolean;
+  userType: string;
+  userCategory: string;
+  userIsDeductible: boolean;
+  userIsPersonal: boolean;
+};
+
+/**
+ * Busca as correcoes mais recentes que o usuario fez em sugestoes da IA.
+ * Limitado por padrao a 30 pra nao inflar prompt — o caching ainda pega.
+ */
+export async function getCorrecoesUsuario(
+  userId: string,
+  limit = 30,
+): Promise<CorrecaoUsuario[]> {
+  const rows = await prisma.classificationCorrection.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      description: true,
+      contraparte: true,
+      contraparteDoc: true,
+      amount: true,
+      aiType: true,
+      aiCategory: true,
+      aiIsDeductible: true,
+      aiIsPersonal: true,
+      userType: true,
+      userCategory: true,
+      userIsDeductible: true,
+      userIsPersonal: true,
+    },
+  });
+  return rows;
+}
+
+/**
+ * Formata as correcoes como bloco de "erros conhecidos" pro prompt da IA.
+ * Diferente de historicoAsExemplos, aqui mostramos AMBOS os lados: o que a
+ * IA havia sugerido (errado) e a correcao certa do usuario.
+ */
+export function correcoesAsExemplos(
+  correcoes: CorrecaoUsuario[],
+  maxExemplos = 10,
+): string {
+  if (correcoes.length === 0) return '';
+
+  // Deduplica por (contraparteDoc OU contraparte normalizada) + sinal,
+  // mantendo a correcao mais recente.
+  const visto = new Set<string>();
+  const unicos: CorrecaoUsuario[] = [];
+  for (const c of correcoes) {
+    const sinal = c.amount > 0 ? '+' : '-';
+    const chave = c.contraparteDoc
+      ? `doc:${c.contraparteDoc}|${sinal}`
+      : `nome:${normalize(c.contraparte)}|${sinal}|${c.aiType}->${c.userType}`;
+    if (visto.has(chave)) continue;
+    visto.add(chave);
+    unicos.push(c);
+    if (unicos.length >= maxExemplos) break;
+  }
+
+  if (unicos.length === 0) return '';
+
+  const linhas = unicos.map((c) => {
+    const sinal = c.amount > 0 ? '+' : '';
+    const desc = c.description.slice(0, 50);
+    const contra = c.contraparte ?? '-';
+    const errado = `type=${c.aiType}, category=${c.aiCategory}, deductible=${c.aiIsDeductible}, personal=${c.aiIsPersonal}`;
+    const certo = `type=${c.userType}, category=${c.userCategory}, deductible=${c.userIsDeductible}, personal=${c.userIsPersonal}`;
+    return `  - ${sinal}R$ ${c.amount.toFixed(2)} | ${desc} | ${contra}\n      ❌ NAO classifique como: ${errado}\n      ✅ classifique como:    ${certo}`;
+  });
+
+  return `\n\nATENCAO: erros que voce ja cometeu antes e o usuario corrigiu. NAO repita:\n${linhas.join('\n')}`;
+}

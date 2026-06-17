@@ -14,10 +14,13 @@ import type { ParsedTx } from './pdf-parser';
 import {
   classificarPorHistorico,
   classificarPorRecorrencia,
+  correcoesAsExemplos,
+  getCorrecoesUsuario,
   getHistoricoConfirmado,
   getPadroesRecorrentes,
   historicoAsExemplos,
   type ClassificacaoConfirmada,
+  type CorrecaoUsuario,
 } from './learning';
 import type { TxType } from './tx-types';
 import { TX_TYPES } from './tx-types';
@@ -346,6 +349,58 @@ async function classifyAIBatch(
   const userMessage = `Transacoes pra classificar:
 ${txs.map((tx, i) => `${i}. ${tx.amount > 0 ? '+' : ''}R$ ${tx.amount.toFixed(2)} | ${tx.description} | ${tx.contraparte ?? '-'}${tx.contraparteDoc ? ` | doc=${tx.contraparteDoc}` : ''}`).join('\n')}`;
 
+  // Tool use (function calling): a resposta vem em JSON estruturado e validado
+  // pelo SDK. Elimina o parse manual de markdown fences que falhava em casos
+  // raros e garante que o shape seja sempre o esperado.
+  const tool = {
+    name: 'classify_transactions',
+    description: 'Classifica um lote de transacoes financeiras na ordem recebida.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        classifications: {
+          type: 'array',
+          description: 'Uma classificacao por transacao, na MESMA ordem do input.',
+          items: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: [...TX_TYPES],
+                description: 'Tipo da transacao',
+              },
+              category: {
+                type: 'string',
+                enum: [...CATEGORIES_BUSINESS, ...CATEGORIES_PERSONAL],
+                description: 'Categoria especifica',
+              },
+              isDeductible: {
+                type: 'boolean',
+                description: 'true SO se type="despesa" e for gasto comprovado do trabalho',
+              },
+              isPersonal: {
+                type: 'boolean',
+                description: 'true SO se type="pessoal"',
+              },
+              confidence: {
+                type: 'number',
+                minimum: 0,
+                maximum: 1,
+                description: 'Confianca da classificacao de 0 a 1',
+              },
+              reasoning: {
+                type: 'string',
+                description: 'Motivo curto da classificacao',
+              },
+            },
+            required: ['type', 'category', 'isDeductible', 'isPersonal', 'confidence'],
+          },
+        },
+      },
+      required: ['classifications'],
+    },
+  };
+
   const resp = await client.messages.create({
     model: 'claude-3-5-haiku-20241022',
     max_tokens: 4096,
@@ -358,22 +413,21 @@ ${txs.map((tx, i) => `${i}. ${tx.amount > 0 ? '+' : ''}R$ ${tx.amount.toFixed(2)
         ...(({ cache_control: { type: 'ephemeral' } } as any)),
       },
     ],
+    tools: [tool as any],
+    tool_choice: { type: 'tool', name: 'classify_transactions' } as any,
     messages: [{ role: 'user', content: userMessage }],
   } as any);
 
-  const textBlock = resp.content.find((c) => c.type === 'text');
-  if (!textBlock || textBlock.type !== 'text') {
-    throw new Error('No text response from AI');
+  const toolBlock = resp.content.find((c: any) => c.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('Resposta da IA sem tool_use');
   }
-
-  let raw = textBlock.text.trim();
-  raw = raw.replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
-
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) throw new Error('Resposta nao e array');
+  const input = (toolBlock as any).input;
+  const arr = Array.isArray(input?.classifications) ? input.classifications : null;
+  if (!arr) throw new Error('Resposta da IA sem array classifications');
 
   // Alinha pelo indice. Se a IA devolver menos itens, completa com heuristica.
-  return txs.map((tx, i) => sanitizeAIClassification(parsed[i], tx, profissao));
+  return txs.map((tx, i) => sanitizeAIClassification(arr[i], tx, profissao));
 }
 
 /**
@@ -384,6 +438,7 @@ export async function classifyWithAI(
   txs: ParsedTx[],
   profissao?: string,
   historico: ClassificacaoConfirmada[] = [],
+  correcoes: CorrecaoUsuario[] = [],
 ): Promise<TxClassification[]> {
   if (!process.env.ANTHROPIC_API_KEY) {
     // Sem chave, retorna heuristica
@@ -393,12 +448,13 @@ export async function classifyWithAI(
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const exemplos = historicoAsExemplos(historico, 15);
+  const negativos = correcoesAsExemplos(correcoes, 10);
 
   const systemPrompt = `Voce e um assistente que classifica transacoes financeiras de profissionais autonomos brasileiros.
 
 Profissao do usuario: ${profissao ?? 'autonoma de beleza'}
 
-Para cada transacao, classifique em JSON com:
+Para cada transacao recebida, classifique com:
 - type: um dos seguintes:
     "receita"        - cliente pagou pelo servico/produto
     "despesa"        - gasto pra manter o negocio (produtos, marketing, etc.)
@@ -413,9 +469,9 @@ Para cada transacao, classifique em JSON com:
 - isDeductible: true SO se type="despesa" e for gasto comprovado do trabalho
 - isPersonal: true SO se type="pessoal"
 - confidence: 0 a 1
-- reasoning: motivo curto da classificacao${exemplos}
+- reasoning: motivo curto da classificacao${exemplos}${negativos}
 
-Retorne SOMENTE um array JSON valido, na MESMA ordem das transacoes recebidas, sem texto antes ou depois.`;
+Use a tool "classify_transactions" pra responder. Mantenha a MESMA ordem do input no array de saida.`;
 
   // Quebra em chunks pra nao estourar tokens nem demorar minutos.
   // O systemPrompt fica cacheado, entao chunks adicionais saem mais baratos.
@@ -476,13 +532,14 @@ export async function classifyTransactionsDetailed(
   profissao?: string,
   userId?: string,
 ): Promise<ClassifyResult> {
-  // 0. Busca historico confirmado e padroes recorrentes do usuario
-  const [historico, padroes] = userId
+  // 0. Busca historico confirmado, padroes recorrentes e correcoes do usuario
+  const [historico, padroes, correcoes] = userId
     ? await Promise.all([
         getHistoricoConfirmado(userId, 200),
         getPadroesRecorrentes(userId),
+        getCorrecoesUsuario(userId, 30),
       ])
-    : [[] as ClassificacaoConfirmada[], []];
+    : [[] as ClassificacaoConfirmada[], [], [] as CorrecaoUsuario[]];
 
   // 1. Tenta historico confirmado, depois recorrencia, depois heuristica.
   // Marca a origem em sourceLayer pra alimentar a telemetria.
@@ -524,7 +581,7 @@ export async function classifyTransactionsDetailed(
   aiTxsCount = txsToRefine.length;
   aiCallsCount = Math.ceil(txsToRefine.length / AI_BATCH_LIMIT);
 
-  const refined = await classifyWithAI(txsToRefine, profissao, historico);
+  const refined = await classifyWithAI(txsToRefine, profissao, historico, correcoes);
 
   // 4. Substitui no array final e atualiza camada de origem
   const result = [...initial];

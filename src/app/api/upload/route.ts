@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
                 amount: tx.amount,
                 description: tx.description,
                 contraparte: tx.contraparte,
+                contraparteDoc: tx.contraparteDoc,
                 type: cls.type,
                 category: cls.category,
                 isDeductible: cls.isDeductible,
