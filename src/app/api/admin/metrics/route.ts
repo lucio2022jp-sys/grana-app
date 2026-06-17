@@ -27,6 +27,20 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
   });
 
+  // Memoria de correcao negativa: pares (sugestao IA -> correcao usuario)
+  // que ja temos guardados pra alimentar o prompt da IA. Quanto mais, mais
+  // contexto a IA tem pra evitar erros repetidos.
+  const corrections = await prisma.classificationCorrection.findMany({
+    where: { createdAt: { gte: since } },
+    select: {
+      userId: true,
+      aiType: true,
+      userType: true,
+      aiCategory: true,
+      userCategory: true,
+    },
+  });
+
   // Agrega
   const totals = rows.reduce(
     (acc, r) => {
@@ -54,6 +68,20 @@ export async function GET(req: NextRequest) {
 
   const pct = (n: number) => (totals.totalTxs > 0 ? (n / totals.totalTxs) * 100 : 0);
 
+  // Top transicoes do tipo (ai -> user) — mostra os erros mais frequentes da IA.
+  const transicoes = new Map<string, number>();
+  for (const c of corrections) {
+    if (c.aiType === c.userType && c.aiCategory === c.userCategory) continue;
+    const chave = `${c.aiType}/${c.aiCategory} → ${c.userType}/${c.userCategory}`;
+    transicoes.set(chave, (transicoes.get(chave) ?? 0) + 1);
+  }
+  const topTransicoes = [...transicoes.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([label, count]) => ({ label, count }));
+
+  const usuariosCorrigindo = new Set(corrections.map((c) => c.userId)).size;
+
   const summary = {
     days,
     uploads: totals.uploads,
@@ -72,6 +100,11 @@ export async function GET(req: NextRequest) {
       count: totals.correctedTxs,
       // taxa de correcao sobre total classificado
       pct: pct(totals.correctedTxs),
+    },
+    memoria: {
+      pares: corrections.length,
+      usuariosAtivos: usuariosCorrigindo,
+      topTransicoes,
     },
   };
 

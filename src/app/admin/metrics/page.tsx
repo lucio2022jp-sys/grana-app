@@ -15,6 +15,11 @@ type Summary = {
   };
   ai: { calls: number; txs: number; avgBatchSize: number };
   corrections: { count: number; pct: number };
+  memoria: {
+    pares: number;
+    usuariosAtivos: number;
+    topTransicoes: Array<{ label: string; count: number }>;
+  };
 };
 
 type SeriePonto = { date: string; total: number; ai: number; corrected: number };
@@ -135,6 +140,39 @@ export default function AdminMetricsPage() {
             <p className="text-xs text-gray-500 mt-3">
               Quanto maior a fatia das duas primeiras, menor o custo de IA — e melhor a heurística está aprendendo.
             </p>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-8">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-medium">Memória negativa</h2>
+              <span className="text-xs text-gray-500">
+                {summary.memoria.pares.toLocaleString('pt-BR')} pares · {summary.memoria.usuariosAtivos} usuário(s)
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Cada vez que o usuário corrige uma sugestão da IA, o par fica salvo e entra no prompt
+              do próximo upload pra evitar erros repetidos.
+            </p>
+            {summary.memoria.topTransicoes.length === 0 ? (
+              <p className="text-sm text-gray-500">Sem correções no período.</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wide text-gray-400">
+                  Top transições (sugestão → correção)
+                </div>
+                {summary.memoria.topTransicoes.map((t) => (
+                  <div
+                    key={t.label}
+                    className="flex justify-between text-sm py-2 border-b border-gray-50 last:border-0"
+                  >
+                    <code className="text-xs bg-gray-50 px-2 py-1 rounded text-gray-700">
+                      {t.label}
+                    </code>
+                    <span className="text-gray-500">{t.count}×</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
