@@ -33,5 +33,7 @@
     X-Frame-Options           = "SAMEORIGIN"
     X-Content-Type-Options    = "nosniff"
     Referrer-Policy           = "strict-origin-when-cross-origin"
-    Permissions-Policy        = "camera=(), microphone=(), geolocation=()"
+    # Camera liberada na origem propria pra capturar foto da nota e ler QR
+    # da NFC-e. Microphone e geolocation continuam bloqueados (nao usamos).
+    Permissions-Policy        = "camera=(self), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
