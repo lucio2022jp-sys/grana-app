@@ -161,9 +161,11 @@ Profissao do usuario: ${profissao}. Use isso pra decidir dedutibilidade.`;
       .trim();
     raw = text;
   } catch (err: any) {
-    console.error('[notes/scan] erro chamando Anthropic:', err?.message ?? err);
+    const detail = err?.error?.error?.message || err?.message || String(err);
+    const status = err?.status || err?.response?.status;
+    console.error('[notes/scan] erro chamando Anthropic:', { detail, status });
     return NextResponse.json(
-      { error: 'Falha ao analisar a nota. Tente de novo.' },
+      { error: `Falha ao analisar a nota. (${status ?? 'sem status'}: ${detail})` },
       { status: 502 },
     );
   }
