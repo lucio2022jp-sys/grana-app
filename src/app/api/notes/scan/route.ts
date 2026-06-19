@@ -130,7 +130,7 @@ Profissao do usuario: ${profissao}. Use isso pra decidir dedutibilidade.`;
   let raw: string;
   try {
     const completion = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-sonnet-4-5',
       max_tokens: 800,
       system: systemPrompt,
       messages: [
