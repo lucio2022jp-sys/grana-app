@@ -104,11 +104,10 @@ export default function CapturarNotaButton() {
     setError(null);
     setStep('preview');
     try {
-      // Aplica a mesma compressao usada pela camera ao vivo, pra evitar
-      // problema com fotos de 8-12MB vindas da galeria. Lado maior 1280px,
-      // JPEG 0.8 -> tipicamente 200KB-1MB. Mostra preview pra usuaria
-      // confirmar antes de gastar IA.
-      const target = 3 * 1024 * 1024;
+      // Mira 1.5MB pra ter folga em rede ruim. Camera ao vivo entrega
+      // ~500KB-1MB; galeria pode chegar com 8-12MB e a gente comprime ate
+      // ficar abaixo do alvo.
+      const target = 1.5 * 1024 * 1024;
       const sending = await compressUntilUnder(f, target, { maxLong: 1280, quality: 0.8 });
       setFile(sending);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -125,7 +124,7 @@ export default function CapturarNotaButton() {
     setError(null);
 
     try {
-      const target = 3 * 1024 * 1024;
+      const target = 1.5 * 1024 * 1024;
       if (file.size > target) {
         const mb = (file.size / 1024 / 1024).toFixed(1);
         setError(
@@ -608,9 +607,11 @@ async function compressUntilUnder(
   maxBytes: number,
   opts: { maxLong?: number; quality?: number } = {},
 ): Promise<File> {
-  // Se ja cabe (mas eh imagem do tipo certo), nao mexe.
+  // Se ja for bem pequena (<half do alvo) e tipo OK, nao mexe pra economizar.
+  // Caso contrario sempre roda pelo menos um passe — assim resolucao fica
+  // consistente, mesmo quando o arquivo ja eh JPEG mas em resolucao alta.
   if (
-    file.size <= maxBytes &&
+    file.size <= maxBytes / 2 &&
     /^image\/(jpeg|png|webp)$/i.test(file.type)
   ) {
     return file;

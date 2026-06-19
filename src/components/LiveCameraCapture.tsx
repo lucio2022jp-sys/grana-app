@@ -54,8 +54,23 @@ export default function LiveCameraCapture({ open, onClose, onCapture }: Props) {
         const video = videoRef.current;
         if (!video) return;
         video.srcObject = stream;
+
+        // Espera o video saber suas dimensoes ANTES de marcar ready.
+        // Sem isso, em iOS o videoWidth/videoHeight pode vir 0 e a captura
+        // falha sem feedback.
+        await new Promise<void>((resolve) => {
+          if (video.readyState >= 1) {
+            resolve();
+            return;
+          }
+          const onMeta = () => {
+            video.removeEventListener('loadedmetadata', onMeta);
+            resolve();
+          };
+          video.addEventListener('loadedmetadata', onMeta);
+        });
         await video.play();
-        setReady(true);
+        if (!cancelled) setReady(true);
       } catch (e: any) {
         const msg =
           e?.name === 'NotAllowedError'
@@ -74,16 +89,25 @@ export default function LiveCameraCapture({ open, onClose, onCapture }: Props) {
   }, [open]);
 
   async function tirar() {
-    if (!ready || capturing) return;
+    if (capturing) return;
+    setError(null);
     const video = videoRef.current;
     if (!video) return;
 
     setCapturing(true);
     try {
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
+      // Em alguns iOS o ready=true vem antes das dimensoes existirem de
+      // verdade. Da uma esperada de ate 1.5s polling antes de desistir.
+      let vw = video.videoWidth;
+      let vh = video.videoHeight;
+      const start = Date.now();
+      while ((!vw || !vh) && Date.now() - start < 1500) {
+        await new Promise((r) => setTimeout(r, 100));
+        vw = video.videoWidth;
+        vh = video.videoHeight;
+      }
       if (!vw || !vh) {
-        setError('Camera nao terminou de carregar. Tenta de novo.');
+        setError('Camera nao terminou de carregar. Fecha e abre de novo.');
         return;
       }
 
@@ -115,6 +139,8 @@ export default function LiveCameraCapture({ open, onClose, onCapture }: Props) {
         lastModified: Date.now(),
       });
       onCapture(file);
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao tirar a foto.');
     } finally {
       setCapturing(false);
     }
@@ -155,13 +181,25 @@ export default function LiveCameraCapture({ open, onClose, onCapture }: Props) {
       <div className="p-6 flex justify-center">
         <button
           onClick={tirar}
-          disabled={!ready || capturing}
+          disabled={capturing}
           className="w-20 h-20 rounded-full border-4 border-white bg-white disabled:opacity-50 active:scale-95 transition shadow-lg flex items-center justify-center"
           aria-label="Tirar foto"
         >
-          <span className="block w-14 h-14 rounded-full bg-white border-2 border-gray-300" />
+          {capturing ? (
+            <span className="block w-10 h-10 rounded-full bg-red-500 animate-pulse" />
+          ) : (
+            <span className="block w-14 h-14 rounded-full bg-white border-2 border-gray-300" />
+          )}
         </button>
       </div>
+
+      {!ready && !error && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/50 text-white px-4 py-2 rounded-full text-sm">
+            Carregando camera...
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="absolute bottom-32 left-4 right-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 text-center">
