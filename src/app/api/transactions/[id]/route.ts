@@ -11,6 +11,7 @@ const updateSchema = z.object({
   isDeductible: z.boolean().optional(),
   isPersonal: z.boolean().optional(),
   notes: z.string().optional(),
+  notaNumero: z.string().nullable().optional(),
 });
 
 export async function PATCH(

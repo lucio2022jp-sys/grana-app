@@ -104,3 +104,44 @@ export async function sendPasswordResetEmail(
     return { sent: false, reason: 'error', error: e };
   }
 }
+
+/**
+ * Envio generico, usado pelos lembretes. Mesma logica de fallback:
+ * sem RESEND_API_KEY ou sem pacote, cai pra log e nao explode.
+ */
+export async function sendGenericEmail(args: {
+  to: string | null | undefined;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<SendResult> {
+  if (!args.to) return { sent: false, reason: 'no_recipient' };
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[mailer] sem RESEND_API_KEY — pulando "${args.subject}" para ${args.to}`);
+    return { sent: false, reason: 'no_api_key' };
+  }
+
+  try {
+    const mod: any = await import('resend').catch((e) => {
+      console.error('[mailer] pacote "resend" nao instalado.');
+      throw e;
+    });
+    const ResendCtor = mod.Resend ?? mod.default?.Resend ?? mod.default;
+    const client = new ResendCtor(apiKey);
+
+    const result = await client.emails.send({
+      from: defaultFrom(),
+      to: args.to,
+      subject: args.subject,
+      html: args.html,
+      text: args.text,
+    });
+
+    return { sent: true, id: result?.data?.id ?? null };
+  } catch (e) {
+    console.error(`[mailer] falha ao enviar "${args.subject}":`, e);
+    return { sent: false, reason: 'error', error: e };
+  }
+}

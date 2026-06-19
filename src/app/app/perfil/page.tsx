@@ -34,6 +34,8 @@ export default function PerfilPage() {
   const [contadorNome, setContadorNome] = useState('');
   const [contadorWhatsapp, setContadorWhatsapp] = useState('');
   const [contadorEmail, setContadorEmail] = useState('');
+  const [reminderDas, setReminderDas] = useState(true);
+  const [reminderInactivity, setReminderInactivity] = useState(true);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -48,6 +50,8 @@ export default function PerfilPage() {
           setContadorNome(d.user.contadorNome ?? '');
           setContadorWhatsapp(d.user.contadorWhatsapp ?? '');
           setContadorEmail(d.user.contadorEmail ?? '');
+          setReminderDas(d.user.reminderDasEnabled ?? true);
+          setReminderInactivity(d.user.reminderInactivityEnabled ?? true);
         }
       });
   }, []);
@@ -65,6 +69,8 @@ export default function PerfilPage() {
         contadorNome: contadorNome || undefined,
         contadorWhatsapp: contadorWhatsapp || undefined,
         contadorEmail: contadorEmail || '',
+        reminderDasEnabled: reminderDas,
+        reminderInactivityEnabled: reminderInactivity,
       }),
     });
     setSaved(true);
@@ -185,6 +191,49 @@ export default function PerfilPage() {
             </Link>
           </p>
         </div>
+      </div>
+
+      {/* Lembretes por email */}
+      <div className="bg-pink-50 border-2 border-pink-200 rounded-3xl p-5 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">🔔</span>
+          <h2 className="font-bold text-gray-900">Lembretes por email</h2>
+        </div>
+        <p className="text-xs text-gray-600 mb-4">
+          A gente avisa antes do DAS vencer e quando voce passa muito tempo sem registrar nada. Nada de spam.
+        </p>
+
+        <label className="flex items-center justify-between bg-white border-2 border-gray-200 rounded-2xl px-4 py-3 mb-2 cursor-pointer">
+          <div>
+            <div className="text-sm font-semibold text-gray-800">Vencimento do DAS</div>
+            <div className="text-xs text-gray-500">Aviso ate 5 dias antes</div>
+          </div>
+          <input
+            type="checkbox"
+            checked={reminderDas}
+            onChange={(e) => setReminderDas(e.target.checked)}
+            className="h-5 w-5 accent-pink-500"
+          />
+        </label>
+
+        <label className="flex items-center justify-between bg-white border-2 border-gray-200 rounded-2xl px-4 py-3 cursor-pointer">
+          <div>
+            <div className="text-sm font-semibold text-gray-800">Inatividade</div>
+            <div className="text-xs text-gray-500">Cutucada se passar 7 dias sem lancar</div>
+          </div>
+          <input
+            type="checkbox"
+            checked={reminderInactivity}
+            onChange={(e) => setReminderInactivity(e.target.checked)}
+            className="h-5 w-5 accent-pink-500"
+          />
+        </label>
+
+        {!email && (
+          <p className="text-xs text-amber-700 mt-3 leading-relaxed">
+            ⚠️ Cadastre um email la em cima pra receber os lembretes.
+          </p>
+        )}
       </div>
 
       <button

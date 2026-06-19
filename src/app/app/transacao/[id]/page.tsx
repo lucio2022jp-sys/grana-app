@@ -24,6 +24,7 @@ export default async function TransacaoPage({ params }: { params: { id: string }
         isPersonal: tx.isPersonal,
         userConfirmed: tx.userConfirmed,
         hasAttachment: Boolean(tx.attachmentUrl),
+        notaNumero: tx.notaNumero ?? null,
       }}
     />
   );

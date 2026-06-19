@@ -15,6 +15,7 @@ type Tx = {
   isPersonal: boolean;
   userConfirmed: boolean;
   hasAttachment: boolean;
+  notaNumero: string | null;
 };
 
 const ALL_CATEGORIES = [
@@ -46,6 +47,7 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
   const [category, setCategory] = useState(tx.category);
   const [isDeductible, setIsDeductible] = useState(tx.isDeductible);
   const [isPersonal, setIsPersonal] = useState(tx.isPersonal);
+  const [notaNumero, setNotaNumero] = useState(tx.notaNumero ?? '');
   const [saving, setSaving] = useState(false);
 
   const [hasAttachment, setHasAttachment] = useState(tx.hasAttachment);
@@ -133,7 +135,13 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
     await fetch(`/api/transactions/${tx.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, category, isDeductible, isPersonal }),
+      body: JSON.stringify({
+        type,
+        category,
+        isDeductible,
+        isPersonal,
+        notaNumero: type === 'receita' ? (notaNumero.trim() || null) : null,
+      }),
     });
     router.push('/app/transacoes');
   }
@@ -224,6 +232,25 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
             <div className="text-xs text-gray-500">Marca quando nao for do trabalho</div>
           </div>
         </label>
+
+        {/* Nota fiscal — so faz sentido em receita */}
+        {type === 'receita' && (
+          <label className="block bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-soft">
+            <span className="block text-sm font-semibold text-gray-800 mb-1">
+              🧾 Nota fiscal
+            </span>
+            <span className="block text-xs text-gray-500 mb-2">
+              Numero da NF emitida pra esse recebimento. Deixa em branco se ainda nao emitiu.
+            </span>
+            <input
+              type="text"
+              value={notaNumero}
+              onChange={(e) => setNotaNumero(e.target.value)}
+              placeholder="Ex: 000123"
+              className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-xl px-4 py-3 transition"
+            />
+          </label>
+        )}
 
         {/* Comprovante (foto ou PDF) */}
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-soft">

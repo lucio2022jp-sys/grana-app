@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import PWARegister from '@/components/PWARegister';
 
 export const metadata: Metadata = {
   title: 'Grana - Sua empresa no caminho certo',
@@ -46,6 +47,7 @@ export default function RootLayout({
         <div className="mx-auto max-w-md min-h-screen flex flex-col relative overflow-hidden">
           {children}
         </div>
+        <PWARegister />
       </body>
     </html>
   );

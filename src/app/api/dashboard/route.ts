@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserCookieName } from '@/lib/session';
+import { getMEIProjection } from '@/lib/mei-projection';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,6 +106,15 @@ export async function GET(req: NextRequest) {
   const yearReceita = yearReceitas._sum.amount ?? 0;
   const meiPercent = Math.min(100, Math.round((yearReceita / MEI_LIMIT) * 100));
 
+  // Projecao MEI: so faz sentido pra quem esta no regime MEI.
+  const userInfo = await prisma.user.findUnique({
+    where: { id: uid },
+    select: { regime: true },
+  });
+  const meiProjecao = userInfo?.regime === 'mei'
+    ? await getMEIProjection(uid)
+    : null;
+
   // Top clientes (por contraparte das receitas)
   const clienteMap = new Map<string, number>();
   monthTxs
@@ -145,6 +155,7 @@ export async function GET(req: NextRequest) {
     meiLimit: MEI_LIMIT,
     yearReceita,
     meiPercent,
+    meiProjecao,
     txCount: monthTxs.length,
     topClientes,
     topDespesas,

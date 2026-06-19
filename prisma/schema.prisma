@@ -37,6 +37,89 @@ model User {
   indicacoes   Indicacao[]
   avaliacoes   Avaliacao[]
   passwordResetTokens PasswordResetToken[]
+  reminderLogs ReminderLog[]
+  budgets      Budget[]
+
+  // Preferencias de lembrete. Default: tudo ligado.
+  reminderDasEnabled       Boolean @default(true)
+  reminderInactivityEnabled Boolean @default(true)
+
+  /// Percentual sugerido pra separar do faturamento como reserva de imposto.
+  /// null = usar o default da lib (8% pra Simples, fixo pra MEI).
+  taxReserveAutoPercent Int?
+
+  taxReserves TaxReserve[]
+}
+
+/// Reserva de impostos: a usuaria separa um pedaco do faturamento todo mes
+/// pra nao ser pega de surpresa no DAS. A gente registra cada contribuicao
+/// (manual ou sugerida pelo "auto").
+///
+/// Decisoes:
+///  - Cada deposito eh um row, agregado por (year, month) na consulta. Da
+///    pra ver o historico e remover entradas individuais.
+///  - amount em positivo (valor que ENTROU na reserva).
+///  - auto=true marca depositos criados pelo botao "reservar agora" baseado
+///    em receita do mes; auto=false eh entrada manual.
+model TaxReserve {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  year      Int
+  month     Int      // 1-12
+  amount    Float
+  note      String?
+  auto      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, year, month])
+}
+
+/// Limite mensal de gastos por categoria. Usuaria define quanto pretende
+/// gastar com "alimentacao" / "transporte_pessoal" / etc num mes; a gente
+/// calcula o progresso somando todas as transacoes (despesa + pessoal) da
+/// categoria dentro do mes corrente.
+///
+/// Decisoes:
+///  - Um unico registro por (userId, category). O limite eh "do mes
+///    corrente" e nao precisamos armazenar historico por mes pra V1.
+///  - alertThreshold em % (0-100): quando atinge, marcamos visualmente
+///    como "alerta". Default 80.
+///  - Categoria eh string livre (nao FK) pra acompanhar as categorias
+///    existentes em Transaction.category.
+model Budget {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category        String
+  monthlyLimit    Float
+  alertThreshold  Int      @default(80)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, category])
+  @@index([userId])
+}
+
+/// Registro de lembretes ja enviados, pra nao spammar a usuaria.
+/// Cada combinacao (userId + kind + reference) so dispara uma vez.
+/// reference e uma string canonizada — ex: "das:2026-07" ou "inactivity:2026-W25".
+model ReminderLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind      String   // "das_due" | "inactivity_week" | ...
+  reference String   // chave canonica do periodo, garante idempotencia
+  sentAt    DateTime @default(now())
+
+  @@unique([userId, kind, reference])
+  @@index([userId])
 }
 
 model PasswordResetToken {
@@ -79,6 +162,7 @@ model Transaction {
   userConfirmed   Boolean  @default(false)
   notes           String?
   attachmentUrl   String?
+  notaNumero      String?  // numero da NF emitida pra esta receita
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

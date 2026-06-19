@@ -17,6 +17,8 @@ const updateSchema = z.object({
   contadorNome: z.string().optional(),
   contadorWhatsapp: z.string().optional(),
   contadorEmail: z.string().email().optional().or(z.literal('')),
+  reminderDasEnabled: z.boolean().optional(),
+  reminderInactivityEnabled: z.boolean().optional(),
 });
 
 export async function GET(req: NextRequest) {

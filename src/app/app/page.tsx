@@ -17,6 +17,16 @@ type Dashboard = {
   sobrou: number;
   meiPercent: number;
   yearReceita: number;
+  meiProjecao: {
+    yearReceita: number;
+    mediaMensal: number;
+    mesesRestantes: number;
+    projecaoAnual: number;
+    percentTeto: number;
+    percentTolerancia: number;
+    status: 'tranquilo' | 'atento' | 'risco' | 'estourado' | 'desenquadre';
+    mensagem: string;
+  } | null;
   topClientes: { nome: string; total: number }[];
   topDespesas: { categoria: string; total: number }[];
   txCount: number;
@@ -420,6 +430,27 @@ export default function AppHome() {
           <div className="text-xs text-gray-600 mt-2 font-medium">
             R$ {data.yearReceita.toFixed(0)} de R$ 81.000
           </div>
+
+          {data.meiProjecao && data.meiProjecao.status !== 'tranquilo' && (
+            <div className={`mt-3 pt-3 border-t text-xs ${
+              data.meiProjecao.status === 'desenquadre' || data.meiProjecao.status === 'estourado'
+                ? 'border-red-200 text-red-800'
+                : data.meiProjecao.status === 'risco'
+                  ? 'border-orange-200 text-orange-800'
+                  : 'border-yellow-200 text-yellow-800'
+            }`}>
+              <div className="font-bold mb-1">
+                {data.meiProjecao.status === 'desenquadre' && '🚨 Desenquadre provavel'}
+                {data.meiProjecao.status === 'estourado' && '🚨 Voce passou do teto'}
+                {data.meiProjecao.status === 'risco' && '⚠️ Risco de desenquadre'}
+                {data.meiProjecao.status === 'atento' && '👀 De olho no ritmo'}
+              </div>
+              <div className="leading-relaxed">{data.meiProjecao.mensagem}</div>
+              <div className="text-gray-500 mt-2">
+                Projecao do ano: R$ {data.meiProjecao.projecaoAnual.toFixed(0)} (media de R$ {data.meiProjecao.mediaMensal.toFixed(0)}/mes nos ultimos meses)
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -484,6 +515,20 @@ export default function AppHome() {
           🔁 {recurringCount} {recurringCount === 1 ? 'pagamento recorrente' : 'pagamentos recorrentes'} →
         </Link>
       )}
+
+      <Link
+        href="/app/orcamento"
+        className="block bg-white border-2 border-primary-200 hover:border-primary-400 rounded-2xl p-3 text-center text-primary-700 text-sm font-medium transition mt-3"
+      >
+        🎯 Orcamento por categoria →
+      </Link>
+
+      <Link
+        href="/app/reserva"
+        className="block bg-white border-2 border-primary-200 hover:border-primary-400 rounded-2xl p-3 text-center text-primary-700 text-sm font-medium transition mt-3"
+      >
+        🐷 Reserva de impostos →
+      </Link>
 
       {/* Indicador discreto de saude quando esta saudavel */}
       {saude && saude.nivel === 'saudavel' && (

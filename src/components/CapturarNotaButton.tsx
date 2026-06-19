@@ -17,6 +17,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TX_TYPE_INFO, type TxType } from '@/lib/tx-types';
+import NfceQrScanner, { type NfceResult } from './NfceQrScanner';
 
 type Extracted = {
   valor: number;
@@ -50,6 +51,38 @@ export default function CapturarNotaButton() {
   const [file, setFile] = useState<File | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  function handleNfceResult(n: NfceResult) {
+    setScannerOpen(false);
+    if (n.fallback || !n.total) {
+      setError(
+        'Achei o QR mas a SEFAZ nao devolveu os dados. Tente tirar foto da nota.',
+      );
+      return;
+    }
+    // Pre-preenche o formulario de revisao com o que veio da SEFAZ.
+    const desc =
+      n.itens.length > 0
+        ? n.itens.map((i) => i.descricao).slice(0, 3).join(', ') +
+          (n.itens.length > 3 ? '...' : '')
+        : n.emitente?.nome || 'Compra NFC-e';
+    const data = (n.emitidaEm || new Date().toISOString()).slice(0, 10);
+    setExtracted({
+      valor: n.total,
+      data,
+      descricao: desc,
+      contraparte: n.emitente?.nome || '',
+      type: 'despesa_pessoal' as TxType,
+      category: 'outros_pessoal',
+      isDeductible: false,
+      isPersonal: true,
+      confidence: 1,
+      reasoning: `NFC-e ${n.uf} · chave ${n.chave.slice(-8)}`,
+    });
+    setFile(null); // sem foto pra anexar nesse caminho
+    setStep('review');
+  }
 
   function reset() {
     setStep('idle');
@@ -101,7 +134,7 @@ export default function CapturarNotaButton() {
   }
 
   async function confirmar() {
-    if (!extracted || !file) return;
+    if (!extracted) return;
     setStep('saving');
     setError(null);
 
@@ -128,9 +161,9 @@ export default function CapturarNotaButton() {
         return;
       }
 
-      // 2) sobe a foto como attachment (best-effort: se falhar, a tx ja existe)
+      // 2) sobe a foto como attachment, se houver (best-effort).
       const txId = createData.transaction?.id;
-      if (txId) {
+      if (txId && file) {
         const fd = new FormData();
         fd.append('file', file);
         const uploadRes = await fetch(`/api/transactions/${txId}/attachment`, {
@@ -155,6 +188,11 @@ export default function CapturarNotaButton() {
 
   return (
     <>
+      <NfceQrScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onResult={handleNfceResult}
+      />
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -203,6 +241,15 @@ export default function CapturarNotaButton() {
                     className="w-full bg-gradient-cool text-white font-bold py-5 rounded-2xl shadow-glow-cool hover:scale-105 active:scale-95 transition text-lg"
                   >
                     📷 Tirar foto / escolher imagem
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      setScannerOpen(true);
+                    }}
+                    className="w-full bg-white border-2 border-secondary-300 text-secondary-700 font-bold py-4 rounded-2xl hover:bg-secondary-50 transition"
+                  >
+                    📱 Ler QR Code da NFC-e
                   </button>
                   <p className="text-xs text-gray-500 text-center">
                     Formatos: JPG, PNG ou WEBP. Maximo 8MB.

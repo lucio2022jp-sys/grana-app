@@ -16,6 +16,7 @@ type Tx = {
   isRecurring?: boolean;
   userConfirmed: boolean;
   notes?: string | null;
+  notaNumero?: string | null;
 };
 
 function formatBRL(n: number) {
@@ -160,6 +161,16 @@ export default function TransacoesPage() {
                           {tx.isRecurring && <span className="bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full font-medium">🔁 recorrente</span>}
                           {tx.isDeductible && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">dedutivel</span>}
                           {!tx.userConfirmed && <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">confirmar</span>}
+                          {tx.type === 'receita' && !tx.notaNumero && (
+                            <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium" title="Sem nota fiscal vinculada">
+                              🧾 sem NF
+                            </span>
+                          )}
+                          {tx.type === 'receita' && tx.notaNumero && (
+                            <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium" title={`NF ${tx.notaNumero}`}>
+                              🧾 NF {tx.notaNumero}
+                            </span>
+                          )}
                           {tx.notes && /ja categorizou|parecid|descricao parecida/i.test(tx.notes) && (
                             <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium" title={tx.notes}>
                               🧠 aprendido
