@@ -99,6 +99,11 @@ export default function AppHome() {
     countPessoais: number;
     totalPessoal: number;
   } | null>(null);
+  const [notasPendentes, setNotasPendentes] = useState<{
+    count: number;
+    total: number;
+    atrasadas: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -122,6 +127,16 @@ export default function AppHome() {
     fetch('/api/evolucao?meses=6')
       .then((r) => r.json())
       .then((d) => setTendencia(d.tendencia));
+    fetch('/api/notas-pendentes')
+      .then((r) => r.json())
+      .then((d) =>
+        setNotasPendentes({
+          count: d.count ?? 0,
+          total: d.total ?? 0,
+          atrasadas: d.atrasadas ?? 0,
+        }),
+      )
+      .catch(() => {});
   }, []);
 
   if (!data) {
@@ -522,6 +537,29 @@ export default function AppHome() {
       >
         🎯 Orcamento por categoria →
       </Link>
+
+      {notasPendentes && notasPendentes.count > 0 && (
+        <Link
+          href="/app/notas-pendentes"
+          className={`block rounded-2xl p-3 text-sm font-medium transition mt-3 border-2 ${
+            notasPendentes.atrasadas > 0
+              ? 'bg-red-50 border-red-200 hover:border-red-400 text-red-800'
+              : 'bg-amber-50 border-amber-200 hover:border-amber-400 text-amber-800'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span>
+              📋 {notasPendentes.count}{' '}
+              {notasPendentes.count === 1 ? 'nota' : 'notas'} pendente
+              {notasPendentes.count === 1 ? '' : 's'}
+              {notasPendentes.atrasadas > 0 && ` · ${notasPendentes.atrasadas} atrasada${notasPendentes.atrasadas === 1 ? '' : 's'}`}
+            </span>
+            <span className="font-extrabold whitespace-nowrap">
+              {formatBRL(notasPendentes.total)} →
+            </span>
+          </div>
+        </Link>
+      )}
 
       <Link
         href="/app/reserva"
