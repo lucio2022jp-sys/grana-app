@@ -18,6 +18,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TX_TYPE_INFO, type TxType } from '@/lib/tx-types';
 import NfceQrScanner, { type NfceResult } from './NfceQrScanner';
+import LiveCameraCapture from './LiveCameraCapture';
 
 type Extracted = {
   valor: number;
@@ -52,6 +53,7 @@ export default function CapturarNotaButton() {
   const [extracted, setExtracted] = useState<Extracted | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   function handleNfceResult(n: NfceResult) {
     setScannerOpen(false);
@@ -105,26 +107,39 @@ export default function CapturarNotaButton() {
     setStep('analyzing');
 
     try {
-      // Foto de celular costuma vir com 4-12MB. Limite efetivo = 4MB
-      // (Netlify Function aceita 6MB; deixamos folga pra metadata multipart e
-      //  pra Anthropic que aceita ~5MB em base64). Comprime ate caber, com
-      //  passes progressivos: 1600x0.85 -> 1280x0.7 -> 1024x0.6 -> 800x0.55.
-      const compressed = await compressUntilUnder(f, 4 * 1024 * 1024);
-      if (compressed.size > 4 * 1024 * 1024) {
+      // Foto vinda da camera ao vivo ja vem em ~1MB. Se a usuaria escolheu
+      // da galeria (caso raro), comprime de qualquer jeito como seguranca.
+      const target = 3 * 1024 * 1024;
+      const sending = f.size > target ? await compressUntilUnder(f, target) : f;
+
+      if (sending.size > target) {
+        const mb = (sending.size / 1024 / 1024).toFixed(1);
         setError(
-          'Foto muito grande mesmo apos compressao. Tira uma foto mais proxima ou recorte antes de enviar.',
+          `Mesmo apos comprimir, a foto ficou em ${mb}MB. Tira a foto mais proxima da nota ou usa o leitor de QR Code.`,
         );
         setStep('idle');
         return;
       }
-      setFile(compressed);
+      setFile(sending);
 
       const fd = new FormData();
-      fd.append('file', compressed);
+      fd.append('file', sending);
       const res = await fetch('/api/notes/scan', { method: 'POST', body: fd });
-      const data = await res.json();
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        if (res.status === 413) {
+          setError(
+            'O servidor recusou a foto pelo tamanho. Tira uma foto mais proxima e tenta de novo.',
+          );
+          setStep('idle');
+          return;
+        }
+      }
       if (!res.ok) {
-        setError(data.error || 'Falha ao analisar.');
+        setError(data.error || `Falha ao analisar (HTTP ${res.status}).`);
         setStep('idle');
         return;
       }
@@ -202,6 +217,14 @@ export default function CapturarNotaButton() {
         onClose={() => setScannerOpen(false)}
         onResult={handleNfceResult}
       />
+      <LiveCameraCapture
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={(f) => {
+          setCameraOpen(false);
+          handleFile(f);
+        }}
+      />
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -219,7 +242,6 @@ export default function CapturarNotaButton() {
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="environment"
         className="hidden"
         onChange={onPickFile}
       />
@@ -246,17 +268,26 @@ export default function CapturarNotaButton() {
                     classifica automatico. Voce confere antes de salvar.
                   </p>
                   <button
-                    onClick={() => inputRef.current?.click()}
+                    onClick={() => {
+                      setError(null);
+                      setCameraOpen(true);
+                    }}
                     className="w-full bg-gradient-cool text-white font-bold py-5 rounded-2xl shadow-glow-cool hover:scale-105 active:scale-95 transition text-lg"
                   >
-                    📷 Tirar foto / escolher imagem
+                    📷 Tirar foto da nota
+                  </button>
+                  <button
+                    onClick={() => inputRef.current?.click()}
+                    className="w-full bg-white border-2 border-secondary-300 text-secondary-700 font-bold py-3 rounded-2xl hover:bg-secondary-50 transition text-sm"
+                  >
+                    🖼️ Escolher da galeria
                   </button>
                   <button
                     onClick={() => {
                       setError(null);
                       setScannerOpen(true);
                     }}
-                    className="w-full bg-white border-2 border-secondary-300 text-secondary-700 font-bold py-4 rounded-2xl hover:bg-secondary-50 transition"
+                    className="w-full bg-white border-2 border-secondary-300 text-secondary-700 font-bold py-3 rounded-2xl hover:bg-secondary-50 transition text-sm"
                   >
                     📱 Ler QR Code da NFC-e
                   </button>
