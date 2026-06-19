@@ -33,7 +33,7 @@ type Extracted = {
   reasoning: string;
 };
 
-type Step = 'idle' | 'analyzing' | 'review' | 'saving';
+type Step = 'idle' | 'preview' | 'analyzing' | 'review' | 'saving';
 
 const CATEGORIAS_DESPESA = [
   'produto', 'equipamento', 'marketing', 'transporte', 'aluguel', 'servicos', 'curso', 'outros_trabalho',
@@ -102,28 +102,41 @@ export default function CapturarNotaButton() {
 
   async function handleFile(f: File) {
     setError(null);
-    const url = URL.createObjectURL(f);
-    setPreviewUrl(url);
+    setStep('preview');
+    try {
+      // Aplica a mesma compressao usada pela camera ao vivo, pra evitar
+      // problema com fotos de 8-12MB vindas da galeria. Lado maior 1280px,
+      // JPEG 0.8 -> tipicamente 200KB-1MB. Mostra preview pra usuaria
+      // confirmar antes de gastar IA.
+      const target = 3 * 1024 * 1024;
+      const sending = await compressUntilUnder(f, target, { maxLong: 1280, quality: 0.8 });
+      setFile(sending);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(sending));
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao preparar a foto.');
+      setStep('idle');
+    }
+  }
+
+  async function analyze() {
+    if (!file) return;
     setStep('analyzing');
+    setError(null);
 
     try {
-      // Foto vinda da camera ao vivo ja vem em ~1MB. Se a usuaria escolheu
-      // da galeria (caso raro), comprime de qualquer jeito como seguranca.
       const target = 3 * 1024 * 1024;
-      const sending = f.size > target ? await compressUntilUnder(f, target) : f;
-
-      if (sending.size > target) {
-        const mb = (sending.size / 1024 / 1024).toFixed(1);
+      if (file.size > target) {
+        const mb = (file.size / 1024 / 1024).toFixed(1);
         setError(
-          `Mesmo apos comprimir, a foto ficou em ${mb}MB. Tira a foto mais proxima da nota ou usa o leitor de QR Code.`,
+          `Foto ainda esta em ${mb}MB. Tira mais perto da nota ou usa o leitor de QR.`,
         );
-        setStep('idle');
+        setStep('preview');
         return;
       }
-      setFile(sending);
 
       const fd = new FormData();
-      fd.append('file', sending);
+      fd.append('file', file);
       const res = await fetch('/api/notes/scan', { method: 'POST', body: fd });
 
       let data: any = {};
@@ -132,22 +145,22 @@ export default function CapturarNotaButton() {
       } catch {
         if (res.status === 413) {
           setError(
-            'O servidor recusou a foto pelo tamanho. Tira uma foto mais proxima e tenta de novo.',
+            'O servidor recusou a foto pelo tamanho. Tira uma foto mais proxima.',
           );
-          setStep('idle');
+          setStep('preview');
           return;
         }
       }
       if (!res.ok) {
         setError(data.error || `Falha ao analisar (HTTP ${res.status}).`);
-        setStep('idle');
+        setStep('preview');
         return;
       }
       setExtracted(data.extracted);
       setStep('review');
     } catch (e: any) {
       setError(e?.message || 'Erro de rede.');
-      setStep('idle');
+      setStep('preview');
     }
   }
 
@@ -299,6 +312,43 @@ export default function CapturarNotaButton() {
                       {error}
                     </div>
                   )}
+                </div>
+              )}
+
+              {step === 'preview' && previewUrl && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-700 font-semibold">
+                    Ficou boa? Confere se da pra ler o valor e o estabelecimento.
+                  </p>
+                  <img
+                    src={previewUrl}
+                    alt="Preview da nota"
+                    className="w-full max-h-[55vh] object-contain rounded-2xl bg-gray-50 shadow-soft"
+                  />
+                  {file && (
+                    <div className="text-xs text-gray-500 text-center">
+                      Tamanho: {(file.size / 1024).toFixed(0)} KB
+                    </div>
+                  )}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+                      {error}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={reset}
+                      className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-2xl hover:bg-gray-200 transition"
+                    >
+                      Tirar outra
+                    </button>
+                    <button
+                      onClick={analyze}
+                      className="flex-[2] bg-gradient-cool text-white font-bold py-3 rounded-2xl shadow-glow-cool hover:scale-105 active:scale-95 transition"
+                    >
+                      ✓ Usar essa
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -553,7 +603,11 @@ async function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise
  * Niveis: 1600/.85 -> 1280/.75 -> 1024/.65 -> 800/.55 -> 640/.5
  * Cobrindo de fotos de iPhone Pro de 12MB ate ficar abaixo de ~3MB.
  */
-async function compressUntilUnder(file: File, maxBytes: number): Promise<File> {
+async function compressUntilUnder(
+  file: File,
+  maxBytes: number,
+  opts: { maxLong?: number; quality?: number } = {},
+): Promise<File> {
   // Se ja cabe (mas eh imagem do tipo certo), nao mexe.
   if (
     file.size <= maxBytes &&
@@ -562,12 +616,18 @@ async function compressUntilUnder(file: File, maxBytes: number): Promise<File> {
     return file;
   }
 
+  // Pass inicial vem do caller (default: 1280/0.8 — mesmo da camera ao vivo).
+  // Se ainda nao caber, vai apertando em passes progressivos.
+  const initial = {
+    dim: opts.maxLong ?? 1280,
+    quality: opts.quality ?? 0.8,
+  };
   const passes: Array<{ dim: number; quality: number }> = [
-    { dim: 1600, quality: 0.85 },
-    { dim: 1280, quality: 0.75 },
-    { dim: 1024, quality: 0.65 },
-    { dim: 800, quality: 0.55 },
+    initial,
+    { dim: Math.min(initial.dim, 1024), quality: 0.7 },
+    { dim: 800, quality: 0.6 },
     { dim: 640, quality: 0.5 },
+    { dim: 480, quality: 0.45 },
   ];
 
   let last = file;
