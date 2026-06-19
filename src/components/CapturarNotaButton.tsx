@@ -103,6 +103,14 @@ export default function CapturarNotaButton() {
   async function handleFile(f: File) {
     setError(null);
     setStep('preview');
+
+    // Mostra preview imediato com a foto original — o usuario nao espera
+    // tela em branco enquanto a compressao acontece (em iOS pode levar
+    // 2-4 segundos numa foto de 12MB).
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(f));
+    setFile(null); // sinaliza que ainda nao terminamos de preparar
+
     try {
       // Mira 1.5MB pra ter folga em rede ruim. Camera ao vivo entrega
       // ~500KB-1MB; galeria pode chegar com 8-12MB e a gente comprime ate
@@ -110,8 +118,6 @@ export default function CapturarNotaButton() {
       const target = 1.5 * 1024 * 1024;
       const sending = await compressUntilUnder(f, target, { maxLong: 1280, quality: 0.8 });
       setFile(sending);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(sending));
     } catch (e: any) {
       setError(e?.message || 'Falha ao preparar a foto.');
       setStep('idle');
@@ -234,6 +240,10 @@ export default function CapturarNotaButton() {
         onClose={() => setCameraOpen(false)}
         onCapture={(f) => {
           setCameraOpen(false);
+          // Garante que o modal principal esta aberto pra exibir o preview
+          // (em iOS o close+open rapidos da camera podem deixar o modal fora
+          //  da arvore se nao reabrirmos explicitamente).
+          setOpen(true);
           handleFile(f);
         }}
       />
@@ -324,11 +334,11 @@ export default function CapturarNotaButton() {
                     alt="Preview da nota"
                     className="w-full max-h-[55vh] object-contain rounded-2xl bg-gray-50 shadow-soft"
                   />
-                  {file && (
-                    <div className="text-xs text-gray-500 text-center">
-                      Tamanho: {(file.size / 1024).toFixed(0)} KB
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500 text-center">
+                    {file
+                      ? `Tamanho: ${(file.size / 1024).toFixed(0)} KB`
+                      : '⏳ Preparando foto...'}
+                  </div>
                   {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
                       {error}
@@ -343,9 +353,10 @@ export default function CapturarNotaButton() {
                     </button>
                     <button
                       onClick={analyze}
-                      className="flex-[2] bg-gradient-cool text-white font-bold py-3 rounded-2xl shadow-glow-cool hover:scale-105 active:scale-95 transition"
+                      disabled={!file}
+                      className="flex-[2] bg-gradient-cool text-white font-bold py-3 rounded-2xl shadow-glow-cool hover:scale-105 active:scale-95 transition disabled:opacity-60 disabled:hover:scale-100"
                     >
-                      ✓ Usar essa
+                      {file ? '✓ Usar essa' : 'Preparando...'}
                     </button>
                   </div>
                 </div>
