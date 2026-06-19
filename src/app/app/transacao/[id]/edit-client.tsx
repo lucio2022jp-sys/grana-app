@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Tx = {
@@ -14,6 +14,7 @@ type Tx = {
   isDeductible: boolean;
   isPersonal: boolean;
   userConfirmed: boolean;
+  hasAttachment: boolean;
 };
 
 const ALL_CATEGORIES = [
@@ -46,6 +47,86 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
   const [isDeductible, setIsDeductible] = useState(tx.isDeductible);
   const [isPersonal, setIsPersonal] = useState(tx.isPersonal);
   const [saving, setSaving] = useState(false);
+
+  const [hasAttachment, setHasAttachment] = useState(tx.hasAttachment);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+
+  // Carrega URL assinada quando tem comprovante (server retorna pra cada visita).
+  useEffect(() => {
+    if (!hasAttachment) {
+      setAttachmentUrl(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/transactions/${tx.id}/attachment`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setAttachmentUrl(data.url ?? null);
+      } catch {
+        // ignora — usuaria ainda ve o card "comprovante anexado"
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAttachment, tx.id]);
+
+  async function uploadAttachment(file: File) {
+    setAttachmentError(null);
+    setAttachmentLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/transactions/${tx.id}/attachment`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAttachmentError(data.error ?? 'Falha ao enviar comprovante.');
+        return;
+      }
+      setHasAttachment(true);
+      setAttachmentUrl(data.url ?? null);
+    } catch {
+      setAttachmentError('Falha de rede. Tente de novo.');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  }
+
+  async function removerAttachment() {
+    if (!confirm('Remover o comprovante?')) return;
+    setAttachmentLoading(true);
+    setAttachmentError(null);
+    try {
+      const res = await fetch(`/api/transactions/${tx.id}/attachment`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setAttachmentError(data.error ?? 'Falha ao remover.');
+        return;
+      }
+      setHasAttachment(false);
+      setAttachmentUrl(null);
+    } catch {
+      setAttachmentError('Falha de rede. Tente de novo.');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  }
+
+  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    uploadAttachment(file);
+  }
 
   async function salvar() {
     setSaving(true);
@@ -143,6 +224,84 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
             <div className="text-xs text-gray-500">Marca quando nao for do trabalho</div>
           </div>
         </label>
+
+        {/* Comprovante (foto ou PDF) */}
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-soft">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="font-semibold text-gray-800">📎 Comprovante</div>
+              <div className="text-xs text-gray-500">
+                Foto ou PDF (max 8MB). Util pra dedutiveis.
+              </div>
+            </div>
+            {hasAttachment && !attachmentLoading && (
+              <button
+                type="button"
+                onClick={removerAttachment}
+                className="text-xs text-red-600 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition"
+              >
+                Remover
+              </button>
+            )}
+          </div>
+
+          {hasAttachment && attachmentUrl && (
+            <a
+              href={attachmentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-xl overflow-hidden border border-gray-100 mb-3 hover:opacity-90 transition"
+            >
+              {/\.(pdf)$/i.test(attachmentUrl.split('?')[0] ?? '') ? (
+                <div className="bg-gray-50 p-6 text-center">
+                  <div className="text-3xl mb-1">📄</div>
+                  <div className="text-sm font-medium text-gray-700">Ver PDF</div>
+                </div>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={attachmentUrl}
+                  alt="Comprovante"
+                  className="w-full max-h-64 object-contain bg-gray-50"
+                />
+              )}
+            </a>
+          )}
+
+          {hasAttachment && !attachmentUrl && !attachmentLoading && (
+            <div className="text-xs text-gray-500 mb-3">
+              Comprovante anexado. Carregando preview...
+            </div>
+          )}
+
+          <label
+            className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl py-3 cursor-pointer transition ${
+              attachmentLoading
+                ? 'border-gray-200 text-gray-400 cursor-wait'
+                : 'border-gray-300 text-gray-700 hover:border-secondary-400 hover:bg-secondary-50'
+            }`}
+          >
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              capture="environment"
+              onChange={onPickFile}
+              disabled={attachmentLoading}
+              className="hidden"
+            />
+            <span className="font-medium text-sm">
+              {attachmentLoading
+                ? '⏳ Enviando...'
+                : hasAttachment
+                  ? '🔄 Trocar comprovante'
+                  : '📷 Tirar foto ou anexar'}
+            </span>
+          </label>
+
+          {attachmentError && (
+            <div className="mt-2 text-xs text-red-600">{attachmentError}</div>
+          )}
+        </div>
       </div>
 
       <button

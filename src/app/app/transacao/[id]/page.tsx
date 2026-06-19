@@ -23,6 +23,7 @@ export default async function TransacaoPage({ params }: { params: { id: string }
         isDeductible: tx.isDeductible,
         isPersonal: tx.isPersonal,
         userConfirmed: tx.userConfirmed,
+        hasAttachment: Boolean(tx.attachmentUrl),
       }}
     />
   );

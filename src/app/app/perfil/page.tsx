@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import CapturarNotaButton from '@/components/CapturarNotaButton';
 
 const PROFISSOES = [
   { value: 'manicure', label: 'Manicure / Pedicure', emoji: '💅' },
@@ -194,6 +195,7 @@ export default function PerfilPage() {
       </button>
 
       <div className="mt-8 space-y-3">
+        <CapturarNotaButton />
         <Link
           href="/app/relatorios"
           className="flex items-center gap-3 bg-gradient-cool text-white rounded-2xl p-4 transition shadow-glow-cool hover:scale-105 active:scale-95"

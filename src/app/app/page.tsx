@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import CapturarNotaButton from '@/components/CapturarNotaButton';
 
 type Dashboard = {
   empty: boolean;
@@ -152,6 +153,10 @@ export default function AppHome() {
           <div className="text-3xl mb-1">✏️</div>
           <div className="text-gray-700 font-medium">Lancar manualmente</div>
         </Link>
+
+        <div className="mt-3">
+          <CapturarNotaButton />
+        </div>
       </main>
     );
   }
@@ -162,6 +167,10 @@ export default function AppHome() {
         <h1 className="text-2xl font-extrabold text-gray-900">Resumo</h1>
         <p className="text-secondary-600 text-xs font-semibold">✨ Sua empresa no caminho certo</p>
         <p className="text-gray-500 capitalize text-sm">{monthName(new Date())}</p>
+      </div>
+
+      <div className="mb-4 animate-pop-in">
+        <CapturarNotaButton />
       </div>
 
       {/* Alerta saude PF/PJ - so quando atencao ou risco */}
