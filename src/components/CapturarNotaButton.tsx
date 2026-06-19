@@ -67,14 +67,18 @@ export default function CapturarNotaButton() {
 
   async function handleFile(f: File) {
     setError(null);
-    setFile(f);
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
     setStep('analyzing');
 
     try {
+      // Foto de celular costuma vir com 4-12MB. A Anthropic recusa acima de
+      // ~5MB em base64. Comprime antes pra evitar 400 e ficar mais rapido.
+      const compressed = await compressImage(f, 1600, 0.85);
+      setFile(compressed);
+
       const fd = new FormData();
-      fd.append('file', f);
+      fd.append('file', compressed);
       const res = await fetch('/api/notes/scan', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) {
@@ -406,4 +410,54 @@ function Field({
       />
     </div>
   );
+}
+
+/**
+ * Redimensiona e recomprime uma imagem no cliente pra caber no limite da API
+ * (Anthropic recusa imagens grandes). Mantem proporcao, exporta JPEG.
+ *
+ * @param maxDim maior lado (px). Resto eh proporcional.
+ * @param quality 0-1 da compressao JPEG.
+ */
+async function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise<File> {
+  // Se ja for pequeno, nao mexe.
+  if (file.size < 900_000) return file;
+
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('Imagem invalida.'));
+    i.src = dataUrl;
+  });
+
+  const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.round(img.width * ratio);
+  const h = Math.round(img.height * ratio);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return file;
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const blob: Blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Falha ao comprimir.'))),
+      'image/jpeg',
+      quality,
+    );
+  });
+
+  return new File([blob], (file.name || 'nota').replace(/\.[^.]+$/, '') + '.jpg', {
+    type: 'image/jpeg',
+    lastModified: Date.now(),
+  });
 }
