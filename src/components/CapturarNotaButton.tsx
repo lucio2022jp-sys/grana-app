@@ -105,9 +105,18 @@ export default function CapturarNotaButton() {
     setStep('analyzing');
 
     try {
-      // Foto de celular costuma vir com 4-12MB. A Anthropic recusa acima de
-      // ~5MB em base64. Comprime antes pra evitar 400 e ficar mais rapido.
-      const compressed = await compressImage(f, 1600, 0.85);
+      // Foto de celular costuma vir com 4-12MB. Limite efetivo = 4MB
+      // (Netlify Function aceita 6MB; deixamos folga pra metadata multipart e
+      //  pra Anthropic que aceita ~5MB em base64). Comprime ate caber, com
+      //  passes progressivos: 1600x0.85 -> 1280x0.7 -> 1024x0.6 -> 800x0.55.
+      const compressed = await compressUntilUnder(f, 4 * 1024 * 1024);
+      if (compressed.size > 4 * 1024 * 1024) {
+        setError(
+          'Foto muito grande mesmo apos compressao. Tira uma foto mais proxima ou recorte antes de enviar.',
+        );
+        setStep('idle');
+        return;
+      }
       setFile(compressed);
 
       const fd = new FormData();
@@ -467,9 +476,6 @@ function Field({
  * @param quality 0-1 da compressao JPEG.
  */
 async function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise<File> {
-  // Se ja for pequeno, nao mexe.
-  if (file.size < 900_000) return file;
-
   const dataUrl: string = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
@@ -507,4 +513,36 @@ async function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise
     type: 'image/jpeg',
     lastModified: Date.now(),
   });
+}
+
+/**
+ * Compressao adaptativa: tenta passes cada vez mais agressivos ate caber em
+ * `maxBytes`. Se nem assim couber, devolve o ultimo (caller decide o que fazer).
+ *
+ * Niveis: 1600/.85 -> 1280/.75 -> 1024/.65 -> 800/.55 -> 640/.5
+ * Cobrindo de fotos de iPhone Pro de 12MB ate ficar abaixo de ~3MB.
+ */
+async function compressUntilUnder(file: File, maxBytes: number): Promise<File> {
+  // Se ja cabe (mas eh imagem do tipo certo), nao mexe.
+  if (
+    file.size <= maxBytes &&
+    /^image\/(jpeg|png|webp)$/i.test(file.type)
+  ) {
+    return file;
+  }
+
+  const passes: Array<{ dim: number; quality: number }> = [
+    { dim: 1600, quality: 0.85 },
+    { dim: 1280, quality: 0.75 },
+    { dim: 1024, quality: 0.65 },
+    { dim: 800, quality: 0.55 },
+    { dim: 640, quality: 0.5 },
+  ];
+
+  let last = file;
+  for (const p of passes) {
+    last = await compressImage(file, p.dim, p.quality);
+    if (last.size <= maxBytes) return last;
+  }
+  return last;
 }
