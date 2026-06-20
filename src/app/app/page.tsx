@@ -207,10 +207,18 @@ export default function AppHome() {
 
   return (
     <main className="flex-1 p-5">
-      <div className="mb-6 animate-pop-in">
-        <h1 className="text-2xl font-extrabold text-gray-900">Resumo</h1>
-        <p className="text-secondary-600 text-xs font-semibold">✨ Sua empresa no caminho certo</p>
-        <p className="text-gray-500 capitalize text-sm">{monthName(new Date())}</p>
+      <div className="mb-4 animate-pop-in flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Resumo</h1>
+          <p className="text-secondary-600 text-xs font-semibold">✨ Sua empresa no caminho certo</p>
+          <p className="text-gray-500 capitalize text-sm">{monthName(new Date())}</p>
+        </div>
+        <Link
+          href="/app/checkup"
+          className="bg-white border-2 border-secondary-200 hover:border-secondary-400 rounded-2xl px-3 py-2 text-xs font-semibold text-secondary-700 transition active:scale-95 whitespace-nowrap"
+        >
+          🔍 Checkup
+        </Link>
       </div>
 
       <div className="mb-4 animate-pop-in">

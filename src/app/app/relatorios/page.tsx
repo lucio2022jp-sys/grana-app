@@ -44,6 +44,18 @@ export default function RelatoriosPage() {
   const [loading, setLoading] = useState(true);
   const [gerando, setGerando] = useState<string | null>(null);
   const [contador, setContador] = useState<Contador | null>(null);
+  const [salvos, setSalvos] = useState<{
+    id: string;
+    year: number;
+    month: number;
+    receita: number;
+    despesas: number;
+    lucro: number;
+    txCount: number;
+    geradoAuto: boolean;
+    geradoEm: string;
+    signedUrl: string | null;
+  }[]>([]);
   const [modalAberto, setModalAberto] = useState<{
     monthStr: string;
     year: number;
@@ -70,6 +82,13 @@ export default function RelatoriosPage() {
           });
         }
       });
+
+    // Pega relatorios ja salvos no servidor (gerados automaticamente ou
+    // sob demanda anterior)
+    fetch('/api/relatorios-salvos')
+      .then((r) => r.json())
+      .then((d) => setSalvos(d.relatorios ?? []))
+      .catch(() => {});
 
     // Lista de meses com transacoes
     const now = new Date();
@@ -136,6 +155,13 @@ export default function RelatoriosPage() {
       const { doc, fileName } = await gerarPDFBlob(year, month);
       doc.save(fileName);
       localStorage.setItem(`relatorio_${monthStr}_geradoEm`, new Date().toISOString());
+      // Tambem dispara o salvamento server-side em paralelo (nao bloqueante).
+      // Se storage nao tiver configurado, o backend so salva o snapshot.
+      fetch('/api/relatorios-salvos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, month }),
+      }).catch(() => {});
     } catch (e: any) {
       alert('Erro: ' + (e.message ?? 'desconhecido'));
     }
@@ -209,6 +235,58 @@ export default function RelatoriosPage() {
         </div>
       ) : null}
 
+      {/* Relatorios salvos automaticamente (cron mensal dia 5).
+          Mostra um banner explicativo + os PDFs salvos no servidor. */}
+      {salvos.length > 0 && (
+        <div className="mb-5">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3">
+            <div className="text-xs text-emerald-900 leading-relaxed">
+              <span className="font-bold">📚 Salvos automaticamente:</span> todo
+              dia 5, o app gera o relatorio do mes anterior e guarda aqui pra
+              voce. Sao copias permanentes.
+            </div>
+          </div>
+          <div className="space-y-2">
+            {salvos.map((s) => {
+              const monthLabel = `${MESES[s.month - 1]} ${s.year}`;
+              return (
+                <div
+                  key={s.id}
+                  className="bg-white border border-gray-200 rounded-2xl p-3 flex items-center gap-3"
+                >
+                  <span className="text-xl">📄</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-gray-900 capitalize">
+                      {monthLabel}
+                      {s.geradoAuto && (
+                        <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                          auto
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Receita {brl(s.receita)} · Lucro {brl(s.lucro)} ·{' '}
+                      Gerado {new Date(s.geradoEm).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  {s.signedUrl ? (
+                    <a
+                      href={s.signedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 whitespace-nowrap"
+                    >
+                      📥 Baixar
+                    </a>
+                  ) : (
+                    <span className="text-xs text-gray-400">PDF nao disponivel</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {meses.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-6xl mb-4 animate-float">📥</div>

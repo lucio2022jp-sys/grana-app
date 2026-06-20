@@ -52,6 +52,7 @@ model User {
   clientes    Cliente[]
   recibos     Recibo[]
   dasnRecibos DasnRecibo[]
+  relatoriosMensais RelatorioMensal[]
 }
 
 /// Reserva de impostos: a usuaria separa um pedaco do faturamento todo mes
@@ -418,4 +419,35 @@ model DasnRecibo {
 
   @@unique([userId, year])
   @@index([userId])
+}
+
+/// Relatorio mensal de receitas (obrigacao legal do MEI). Gerado
+/// automaticamente todo dia 5 pelo cron, ou sob demanda pela usuaria.
+/// Fica salvo no Storage pra nao precisar regerar e pra manter copia.
+///
+/// Snapshot dos numeros principais ficam no banco — assim a lista pode
+/// mostrar receita/despesa/lucro sem precisar abrir o PDF.
+model RelatorioMensal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  year        Int
+  month       Int      // 1-12
+
+  // Snapshots
+  receita     Float    @default(0)
+  despesas    Float    @default(0)
+  lucro       Float    @default(0)
+  txCount     Int      @default(0)
+
+  // Path no Supabase Storage. Se null, regerou e nao subiu (ou storage off).
+  pdfPath     String?
+
+  // Origem da geracao
+  geradoAuto  Boolean  @default(false)
+  geradoEm    DateTime @default(now())
+
+  @@unique([userId, year, month])
+  @@index([userId, year, month])
 }

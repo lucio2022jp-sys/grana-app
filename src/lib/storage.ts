@@ -163,3 +163,46 @@ export async function getDasnSignedUrl(path: string): Promise<string | null> {
 export async function deleteDasn(path: string): Promise<void> {
   return deleteReceipt(path);
 }
+
+// ---------- Relatorios mensais ----------
+
+export function buildRelatorioPath(params: {
+  userId: string;
+  year: number;
+  month: number;
+}): string {
+  const m = String(params.month).padStart(2, '0');
+  const ts = Date.now();
+  return `relatorios/${params.userId}/${params.year}-${m}-${ts}.pdf`;
+}
+
+export async function uploadRelatorio(params: {
+  userId: string;
+  year: number;
+  month: number;
+  buffer: Buffer;
+}): Promise<{ path: string }> {
+  const client = getServerClient();
+  if (!client) {
+    throw new Error('Storage nao configurado.');
+  }
+  const path = buildRelatorioPath({
+    userId: params.userId,
+    year: params.year,
+    month: params.month,
+  });
+  const { error } = await client.storage.from(BUCKET).upload(path, params.buffer, {
+    contentType: 'application/pdf',
+    upsert: true,
+  });
+  if (error) throw new Error(`Falha ao subir relatorio: ${error.message}`);
+  return { path };
+}
+
+export async function getRelatorioSignedUrl(path: string): Promise<string | null> {
+  return getReceiptSignedUrl(path);
+}
+
+export async function deleteRelatorio(path: string): Promise<void> {
+  return deleteReceipt(path);
+}

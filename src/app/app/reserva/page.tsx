@@ -173,7 +173,8 @@ export default function ReservaPage() {
 
       <p className="text-sm text-gray-600 mb-5">
         Separa um pedaco do faturamento todo mes pra nao ser pega de
-        surpresa no DAS. A meta abaixo e estimada pelo seu regime atual.
+        surpresa no DAS. A meta abaixo e uma <strong>sugestao</strong> baseada
+        no seu regime — nao e o valor exato do imposto.
       </p>
 
       {/* Card principal */}

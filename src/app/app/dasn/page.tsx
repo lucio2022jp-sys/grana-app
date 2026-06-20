@@ -216,6 +216,10 @@ export default function DasnPage() {
           Declaracao anual obrigatoria do MEI. Voce digita 2 numeros no portal
           da Receita e pronto.
         </p>
+        <div className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-xl p-2 text-amber-900 leading-relaxed">
+          ⚠️ Os valores abaixo sao <strong>estimativas</strong> baseadas nas suas
+          transacoes classificadas. Confira no extrato bancario antes de declarar.
+        </div>
       </div>
 
       {/* Seletor de ano */}
