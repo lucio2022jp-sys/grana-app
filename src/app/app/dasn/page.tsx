@@ -7,6 +7,9 @@
  *
  * Tambem permite ajustar a divisao manualmente se a atividade for mista,
  * porque a sugestao 50/50 do server e so um chute inicial.
+ *
+ * Inclui historico de DASN entregues por ano, com upload do PDF do
+ * recibo da Receita.
  */
 
 import { useEffect, useState } from 'react';
@@ -35,6 +38,17 @@ type DasnData = {
   portalUrl: string;
 };
 
+type ReciboHistorico = {
+  id: string;
+  year: number;
+  deliveredAt: string;
+  valorDeclarado: number;
+  receitaComercio: number;
+  receitaServicos: number;
+  pdfPath: string | null;
+  signedUrl: string | null;
+};
+
 function brl(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -53,6 +67,8 @@ export default function DasnPage() {
   const [copiado, setCopiado] = useState<'comercio' | 'servicos' | null>(null);
   const [editandoDivisao, setEditandoDivisao] = useState(false);
   const [comercioCustom, setComercioCustom] = useState<number | null>(null);
+  const [historico, setHistorico] = useState<ReciboHistorico[]>([]);
+  const [marcandoEntregue, setMarcandoEntregue] = useState(false);
 
   async function load(y: number) {
     setLoading(true);
@@ -69,9 +85,21 @@ export default function DasnPage() {
     setLoading(false);
   }
 
+  async function loadHistorico() {
+    try {
+      const res = await fetch('/api/dasn/recibos');
+      const j = await res.json();
+      setHistorico(j.recibos ?? []);
+    } catch {}
+  }
+
   useEffect(() => {
     load(year);
   }, [year]);
+
+  useEffect(() => {
+    loadHistorico();
+  }, []);
 
   async function copiar(tipo: 'comercio' | 'servicos', valor: number) {
     try {
@@ -82,6 +110,70 @@ export default function DasnPage() {
       alert('Nao consegui copiar. Selecione manualmente: ' + formatNumeroPortal(valor));
     }
   }
+
+  async function marcarEntregue(comOuSem: 'com_pdf' | 'sem_pdf') {
+    if (!data) return;
+    const comercioVal = comercioCustom ?? data.receitaComercio;
+    const servicosVal = data.receitaBruta - comercioVal;
+
+    let pdfFile: File | null = null;
+    if (comOuSem === 'com_pdf') {
+      pdfFile = await escolherPdf();
+      if (!pdfFile) return;
+    }
+
+    setMarcandoEntregue(true);
+    try {
+      const fd = new FormData();
+      fd.append('year', String(data.year));
+      fd.append('valorDeclarado', String(data.receitaBruta));
+      fd.append('receitaComercio', String(comercioVal));
+      fd.append('receitaServicos', String(servicosVal));
+      if (pdfFile) fd.append('pdf', pdfFile);
+
+      const res = await fetch('/api/dasn/recibos', {
+        method: 'POST',
+        body: fd,
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'erro');
+      await loadHistorico();
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? 'desconhecido'));
+    }
+    setMarcandoEntregue(false);
+  }
+
+  function escolherPdf(): Promise<File | null> {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/pdf,image/*';
+      input.onchange = () => {
+        const f = input.files?.[0] ?? null;
+        resolve(f);
+      };
+      // Se o user cancelar, nao acontece nada (resolve null no caso ideal,
+      // mas browsers nao disparam evento de cancel consistente).
+      input.click();
+    });
+  }
+
+  async function removerEntrega(yearAlvo: number) {
+    if (!confirm(`Remover registro da DASN ${yearAlvo}?`)) return;
+    try {
+      const res = await fetch(`/api/dasn/recibos?year=${yearAlvo}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await loadHistorico();
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? 'desconhecido'));
+    }
+  }
+
+  // Verifica se ja entregou o ano selecionado
+  const reciboDoAno = historico.find((r) => r.year === year);
 
   if (loading) {
     return (
@@ -144,6 +236,42 @@ export default function DasnPage() {
           })}
         </select>
       </div>
+
+      {/* Banner de "ja entregue" pro ano selecionado */}
+      {reciboDoAno && (
+        <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">✅</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-green-900 text-sm">
+                DASN {reciboDoAno.year} ja entregue
+              </div>
+              <div className="text-xs text-green-700 mt-0.5">
+                Em {new Date(reciboDoAno.deliveredAt).toLocaleDateString('pt-BR')}
+                {' · '}{brl(reciboDoAno.valorDeclarado)}
+              </div>
+              {reciboDoAno.signedUrl ? (
+                <a
+                  href={reciboDoAno.signedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95"
+                >
+                  📄 Ver recibo PDF
+                </a>
+              ) : reciboDoAno.pdfPath ? (
+                <span className="inline-block mt-2 text-xs text-green-700">
+                  PDF anexado (link expirou — recarregue)
+                </span>
+              ) : (
+                <span className="inline-block mt-2 text-xs text-green-700">
+                  Sem PDF anexado
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status do prazo */}
       {data.aberto ? (
@@ -325,6 +453,79 @@ export default function DasnPage() {
           A declaracao em si leva uns 3 minutos.
         </div>
       </div>
+
+      {/* Marcar como entregue */}
+      {!reciboDoAno && (
+        <div className="bg-white border-2 border-green-200 rounded-2xl p-4 mt-4">
+          <div className="font-bold text-gray-900 mb-1">
+            ✅ Ja declarou? Marca aqui
+          </div>
+          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+            Depois de entregar no portal, marca como entregue. Voce pode anexar
+            o PDF do recibo da Receita pra ter copia local.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => marcarEntregue('com_pdf')}
+              disabled={marcandoEntregue}
+              className="bg-gradient-cool text-white font-bold py-3 rounded-xl text-sm shadow-glow-cool active:scale-95 disabled:opacity-50"
+            >
+              {marcandoEntregue ? '⏳' : '📎 Anexar PDF'}
+            </button>
+            <button
+              onClick={() => marcarEntregue('sem_pdf')}
+              disabled={marcandoEntregue}
+              className="bg-white border-2 border-green-300 hover:border-green-500 text-green-700 font-bold py-3 rounded-xl text-sm active:scale-95 disabled:opacity-50"
+            >
+              {marcandoEntregue ? '⏳' : '✓ So marcar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Historico de DASN entregues */}
+      {historico.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-sm font-bold text-gray-700 mb-2 px-1">
+            📚 Historico
+          </h2>
+          <div className="space-y-2">
+            {historico.map((r) => (
+              <div
+                key={r.id}
+                className="bg-white border border-gray-200 rounded-2xl p-3 flex items-start gap-3"
+              >
+                <span className="text-2xl">✅</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900">DASN {r.year}</div>
+                  <div className="text-xs text-gray-500">
+                    Entregue em {new Date(r.deliveredAt).toLocaleDateString('pt-BR')}
+                    {' · '}{brl(r.valorDeclarado)}
+                  </div>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {r.signedUrl ? (
+                      <a
+                        href={r.signedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-semibold"
+                      >
+                        📄 Ver PDF
+                      </a>
+                    ) : null}
+                    <button
+                      onClick={() => removerEntrega(r.year)}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      remover
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

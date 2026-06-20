@@ -162,8 +162,8 @@ export default function PerfilPage() {
               </div>
               <div className="text-xs text-gray-500">
                 {contadorOpen
-                  ? 'Use so se ja tem um contador. MEI puro nao precisa.'
-                  : 'MEI puro nao precisa. Toque pra cadastrar se ja tem um.'}
+                  ? 'Cadastre seu contador pra mandar relatorio direto pra ele.'
+                  : 'Cadastre se tem contador. Toque pra abrir.'}
               </div>
             </div>
           </div>

@@ -51,6 +51,7 @@ model User {
   taxReserves TaxReserve[]
   clientes    Cliente[]
   recibos     Recibo[]
+  dasnRecibos DasnRecibo[]
 }
 
 /// Reserva de impostos: a usuaria separa um pedaco do faturamento todo mes
@@ -393,4 +394,28 @@ model Recibo {
 
   @@index([userId, data])
   @@unique([userId, numero])
+}
+
+/// Historico de DASN-SIMEI entregue por ano. O MEI marca como entregue
+/// apos enviar no portal da Receita e (opcionalmente) anexa o PDF do
+/// recibo. Util pra provar a entrega depois — Receita mantem por anos
+/// mas e mais facil ter copia local.
+model DasnRecibo {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  year            Int      // ano-base declarado
+  deliveredAt     DateTime // quando declarou no portal
+  valorDeclarado  Float    // receita bruta total que foi declarada
+  receitaComercio Float    @default(0)
+  receitaServicos Float    @default(0)
+
+  // Path no Supabase Storage. URL assinada e gerada na hora pra exibir.
+  pdfPath         String?
+
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, year])
+  @@index([userId])
 }

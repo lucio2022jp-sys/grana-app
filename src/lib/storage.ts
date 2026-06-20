@@ -117,3 +117,49 @@ export async function getReceiptSignedUrl(path: string): Promise<string | null> 
   }
   return data.signedUrl;
 }
+
+// ---------- DASN-SIMEI: PDFs de recibo da Receita Federal ----------
+// Mesma logica dos comprovantes mas em diretorio separado.
+
+export function buildDasnPath(params: {
+  userId: string;
+  year: number;
+  mime: string;
+}): string {
+  const ext = extFromMime(params.mime);
+  const ts = Date.now();
+  return `dasn/${params.userId}/${params.year}-${ts}.${ext}`;
+}
+
+export async function uploadDasnRecibo(params: {
+  userId: string;
+  year: number;
+  buffer: Buffer;
+  mime: string;
+}): Promise<{ path: string }> {
+  const client = getServerClient();
+  if (!client) {
+    throw new Error('Storage nao configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.');
+  }
+  const path = buildDasnPath({
+    userId: params.userId,
+    year: params.year,
+    mime: params.mime,
+  });
+  const { error } = await client.storage.from(BUCKET).upload(path, params.buffer, {
+    contentType: params.mime,
+    upsert: true, // permite re-anexar se entregou de novo (raro)
+  });
+  if (error) {
+    throw new Error(`Falha ao subir recibo DASN: ${error.message}`);
+  }
+  return { path };
+}
+
+export async function getDasnSignedUrl(path: string): Promise<string | null> {
+  return getReceiptSignedUrl(path); // mesma logica
+}
+
+export async function deleteDasn(path: string): Promise<void> {
+  return deleteReceipt(path);
+}
