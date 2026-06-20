@@ -104,6 +104,12 @@ export default function AppHome() {
     total: number;
     atrasadas: number;
   } | null>(null);
+  const [dasn, setDasn] = useState<{
+    year: number;
+    receitaBruta: number;
+    aberto: boolean;
+    diasRestantes: number | null;
+  } | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -136,6 +142,19 @@ export default function AppHome() {
           atrasadas: d.atrasadas ?? 0,
         }),
       )
+      .catch(() => {});
+    fetch('/api/dasn')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.year !== undefined) {
+          setDasn({
+            year: d.year,
+            receitaBruta: d.receitaBruta,
+            aberto: d.aberto,
+            diasRestantes: d.diasRestantes,
+          });
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -313,6 +332,48 @@ export default function AppHome() {
               </div>
               <div className="text-2xl font-extrabold text-gray-900 mt-2">
                 {formatBRL(das.total)}
+              </div>
+            </div>
+            <div className="text-gray-400 text-2xl">›</div>
+          </div>
+        </Link>
+      )}
+
+      {/* Alerta DASN-SIMEI: aparece se MEI dentro do prazo (jan-mai) e teve
+          receita no ano anterior. Urgencia varia conforme dias restantes. */}
+      {dasn && dasn.aberto && dasn.receitaBruta > 0 && (
+        <Link
+          href="/app/dasn"
+          className={`block rounded-3xl p-5 mb-4 shadow-soft transition hover:scale-[1.02] active:scale-95 animate-pop-in ${
+            (dasn.diasRestantes ?? 999) < 30
+              ? 'bg-red-50 border-2 border-red-300'
+              : (dasn.diasRestantes ?? 999) < 60
+                ? 'bg-orange-50 border-2 border-orange-300'
+                : 'bg-blue-50 border-2 border-blue-300'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-4xl">
+              {(dasn.diasRestantes ?? 999) < 30 ? '🚨' : '📋'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className={`text-xs font-bold uppercase tracking-wide ${
+                (dasn.diasRestantes ?? 999) < 30 ? 'text-red-700' :
+                (dasn.diasRestantes ?? 999) < 60 ? 'text-orange-700' :
+                'text-blue-700'
+              }`}>
+                DASN-SIMEI {dasn.year}
+              </div>
+              <div className="font-bold text-gray-900 mt-0.5">
+                Declaracao anual obrigatoria
+              </div>
+              <div className="text-sm text-gray-700 mt-0.5">
+                {(dasn.diasRestantes ?? 0) > 0
+                  ? `${dasn.diasRestantes} dia${dasn.diasRestantes === 1 ? '' : 's'} pra entregar`
+                  : 'Prazo final hoje!'}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Receita {dasn.year}: {formatBRL(dasn.receitaBruta)}
               </div>
             </div>
             <div className="text-gray-400 text-2xl">›</div>
@@ -595,6 +656,13 @@ export default function AppHome() {
         className="block bg-white border-2 border-primary-200 hover:border-primary-400 rounded-2xl p-3 text-center text-primary-700 text-sm font-medium transition mt-3"
       >
         🐷 Reserva de impostos →
+      </Link>
+
+      <Link
+        href="/app/dasn"
+        className="block bg-white border-2 border-primary-200 hover:border-primary-400 rounded-2xl p-3 text-center text-primary-700 text-sm font-medium transition mt-3"
+      >
+        📋 DASN-SIMEI (declaracao anual) →
       </Link>
 
       {/* Indicador discreto de saude quando esta saudavel */}
