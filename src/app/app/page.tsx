@@ -464,6 +464,20 @@ export default function AppHome() {
               <div className="text-gray-500 mt-2">
                 Projecao do ano: R$ {data.meiProjecao.projecaoAnual.toFixed(0)} (media de R$ {data.meiProjecao.mediaMensal.toFixed(0)}/mes nos ultimos meses)
               </div>
+
+              {/* Sugestao de contador parceiro: so aparece nos status mais
+                  serios. Sair do MEI/migrar pra Simples e quando contador
+                  vira praticamente obrigatorio. */}
+              {(data.meiProjecao.status === 'risco' ||
+                data.meiProjecao.status === 'estourado' ||
+                data.meiProjecao.status === 'desenquadre') && (
+                <Link
+                  href="/app/parceiros"
+                  className="block bg-white/60 hover:bg-white border border-current/20 rounded-xl p-2.5 mt-3 text-center font-semibold transition"
+                >
+                  👨‍💼 Falar com contador parceiro →
+                </Link>
+              )}
             </div>
           )}
         </div>

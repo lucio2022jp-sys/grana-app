@@ -37,6 +37,9 @@ export default function PerfilPage() {
   const [reminderDas, setReminderDas] = useState(true);
   const [reminderInactivity, setReminderInactivity] = useState(true);
   const [saved, setSaved] = useState(false);
+  // Bloco do contador fica fechado por padrao. So abre se ja tem dado
+  // cadastrado, ou se a usuaria clicar pra expandir. MEI puro nao precisa.
+  const [contadorOpen, setContadorOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/me')
@@ -50,6 +53,10 @@ export default function PerfilPage() {
           setContadorNome(d.user.contadorNome ?? '');
           setContadorWhatsapp(d.user.contadorWhatsapp ?? '');
           setContadorEmail(d.user.contadorEmail ?? '');
+          // Abre automaticamente se ja tem dado salvo
+          if (d.user.contadorNome || d.user.contadorWhatsapp || d.user.contadorEmail) {
+            setContadorOpen(true);
+          }
           setReminderDas(d.user.reminderDasEnabled ?? true);
           setReminderInactivity(d.user.reminderInactivityEnabled ?? true);
         }
@@ -139,58 +146,72 @@ export default function PerfilPage() {
         </label>
       </div>
 
-      {/* Secao do contador */}
-      <div className="bg-purple-50 border-2 border-purple-200 rounded-3xl p-5 mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-2xl">👨‍💼</span>
-          <h2 className="font-bold text-gray-900">Meu contador</h2>
-        </div>
-        <p className="text-xs text-gray-600 mb-4">
-          Cadastre uma vez. Toda hora que gerar relatorio, o app envia direto pra ele no WhatsApp ou email.
-        </p>
+      {/* Secao do contador (opcional, fica recolhida por padrao).
+          MEI puro nao precisa de contador, entao nao empurramos isso. */}
+      <div className="bg-white border-2 border-gray-200 rounded-3xl mb-4 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setContadorOpen((v) => !v)}
+          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xl">👨‍💼</span>
+            <div>
+              <div className="font-semibold text-gray-900 text-sm">
+                Contador {contadorNome ? `· ${contadorNome}` : '(opcional)'}
+              </div>
+              <div className="text-xs text-gray-500">
+                {contadorOpen
+                  ? 'Use so se ja tem um contador. MEI puro nao precisa.'
+                  : 'MEI puro nao precisa. Toque pra cadastrar se ja tem um.'}
+              </div>
+            </div>
+          </div>
+          <span className={`text-gray-400 text-xl transition-transform ${contadorOpen ? 'rotate-180' : ''}`}>▾</span>
+        </button>
 
-        <div className="space-y-3">
-          <label className="block">
-            <span className="block text-xs font-semibold text-gray-700 mb-1">Nome do contador</span>
-            <input
-              type="text"
-              value={contadorNome}
-              onChange={(e) => setContadorNome(e.target.value)}
-              placeholder="Ex: Joao Silva"
-              className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
-            />
-          </label>
+        {contadorOpen && (
+          <div className="px-5 pb-5 pt-1 space-y-3 border-t border-gray-100">
+            <label className="block">
+              <span className="block text-xs font-semibold text-gray-700 mb-1">Nome do contador</span>
+              <input
+                type="text"
+                value={contadorNome}
+                onChange={(e) => setContadorNome(e.target.value)}
+                placeholder="Ex: Joao Silva"
+                className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
+              />
+            </label>
 
-          <label className="block">
-            <span className="block text-xs font-semibold text-gray-700 mb-1">WhatsApp 📱</span>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={contadorWhatsapp}
-              onChange={(e) => setContadorWhatsapp(e.target.value)}
-              placeholder="Ex: (11) 99999-9999"
-              className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
-            />
-          </label>
+            <label className="block">
+              <span className="block text-xs font-semibold text-gray-700 mb-1">WhatsApp 📱</span>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={contadorWhatsapp}
+                onChange={(e) => setContadorWhatsapp(e.target.value)}
+                placeholder="Ex: (11) 99999-9999"
+                className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
+              />
+            </label>
 
-          <label className="block">
-            <span className="block text-xs font-semibold text-gray-700 mb-1">Email 📧</span>
-            <input
-              type="email"
-              value={contadorEmail}
-              onChange={(e) => setContadorEmail(e.target.value)}
-              placeholder="contador@exemplo.com"
-              className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
-            />
-          </label>
+            <label className="block">
+              <span className="block text-xs font-semibold text-gray-700 mb-1">Email 📧</span>
+              <input
+                type="email"
+                value={contadorEmail}
+                onChange={(e) => setContadorEmail(e.target.value)}
+                placeholder="contador@exemplo.com"
+                className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-4 py-3 text-sm shadow-sm transition"
+              />
+            </label>
 
-          <p className="text-xs text-purple-700 leading-relaxed pt-1">
-            💡 <span className="font-bold">Nao tem contador?</span> A gente conhece contadores parceiros que cobram justo.
-            <Link href="/app/parceiros" className="underline font-bold ml-1">
-              Ver lista →
-            </Link>
-          </p>
-        </div>
+            <p className="text-xs text-gray-500 leading-relaxed pt-1">
+              Se cadastrar, o relatorio mensal pode ser enviado direto pra ele
+              no WhatsApp ou email.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Lembretes por email */}

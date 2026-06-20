@@ -178,7 +178,8 @@ export default function RelatoriosPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-gray-900">📊 Relatorios</h1>
         <p className="text-sm text-gray-500">
-          Gere relatorios mensais pra mandar pro contador.
+          Relatorio mensal de receitas — voce e obrigada por lei a guardar isso.
+          Tambem serve pra mandar pro contador, se tiver.
         </p>
         <button
           onClick={abrirQR}
@@ -206,33 +207,7 @@ export default function RelatoriosPage() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 mb-4 text-sm">
-          <div className="flex items-start gap-2">
-            <span className="text-xl shrink-0">💡</span>
-            <div className="flex-1">
-              <div className="font-bold text-yellow-900 mb-1">Cadastre seu contador</div>
-              <div className="text-xs text-yellow-800 mb-2">
-                Cadastre uma vez e o app envia o relatorio direto pra ele. Ou escolha um dos nossos parceiros.
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  href="/app/perfil"
-                  className="inline-block bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg"
-                >
-                  Cadastrar meu →
-                </Link>
-                <Link
-                  href="/app/parceiros"
-                  className="inline-block bg-white border border-yellow-600 text-yellow-700 text-xs font-bold px-3 py-1.5 rounded-lg"
-                >
-                  Ver parceiros →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {meses.length === 0 ? (
         <div className="text-center py-16">
@@ -318,9 +293,10 @@ export default function RelatoriosPage() {
         <div className="flex items-start gap-2">
           <span className="text-xl shrink-0">💡</span>
           <div className="text-xs text-blue-800 leading-relaxed">
-            <span className="font-bold">Como mandar pro contador:</span> toca em &quot;Enviar&quot; e
-            escolhe WhatsApp, email ou outro app. O PDF vai certinho com tudo organizado:
-            receitas, despesas dedutiveis, retiradas, DAS e observacoes.
+            <span className="font-bold">O relatorio mensal e obrigatorio por lei</span> —
+            voce precisa guardar pra mostrar a Receita se ela pedir. O PDF tem
+            tudo organizado: receitas, despesas dedutiveis, DAS e observacoes.
+            Se voce tem contador, da pra mandar direto via WhatsApp ou email.
           </div>
         </div>
       </div>
@@ -539,8 +515,9 @@ function ModalEnvio({
             </div>
           </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 mb-4 text-xs text-yellow-900">
-            💡 <span className="font-bold">Dica:</span> cadastre seu contador no perfil pra enviar com 1 toque.
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3 mb-4 text-xs text-gray-700">
+            💡 Voce pode mandar pra qualquer pessoa via WhatsApp, email ou outro app.
+            Se tem um contador, da pra cadastrar ele no perfil pra enviar com 1 toque.
           </div>
         )}
 
