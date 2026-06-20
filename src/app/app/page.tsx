@@ -538,6 +538,21 @@ export default function AppHome() {
         🎯 Orcamento por categoria →
       </Link>
 
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <Link
+          href="/app/clientes"
+          className="block bg-white border-2 border-secondary-200 hover:border-secondary-400 rounded-2xl p-3 text-center text-secondary-700 text-sm font-medium transition"
+        >
+          👥 Clientes
+        </Link>
+        <Link
+          href="/app/recibo/novo"
+          className="block bg-gradient-cool text-white rounded-2xl p-3 text-center text-sm font-bold shadow-glow-cool transition active:scale-95"
+        >
+          🧾 Novo recibo
+        </Link>
+      </div>
+
       {notasPendentes && notasPendentes.count > 0 && (
         <Link
           href="/app/notas-pendentes"

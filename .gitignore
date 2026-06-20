@@ -10,3 +10,6 @@ prisma/dev.db-journal
 next-env.d.ts
 tsconfig.tsbuildinfo
 .claude/
+
+# Local Netlify folder
+.netlify

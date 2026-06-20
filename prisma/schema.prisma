@@ -49,6 +49,8 @@ model User {
   taxReserveAutoPercent Int?
 
   taxReserves TaxReserve[]
+  clientes    Cliente[]
+  recibos     Recibo[]
 }
 
 /// Reserva de impostos: a usuaria separa um pedaco do faturamento todo mes
@@ -332,4 +334,63 @@ model ClassificationCorrection {
 
   @@index([userId, createdAt])
   @@index([userId, contraparteDoc])
+}
+
+/// Clientes recorrentes da MEI. Salvar uma vez evita redigitar CPF/nome a cada
+/// recibo ou NF.
+///
+/// Convencao:
+///  - `doc` guarda CPF/CNPJ apenas com digitos pra busca rapida.
+///  - `whatsapp` em formato livre, mas a UI tenta normalizar pra E.164 quando
+///    monta o link wa.me.
+///  - Indice unique (userId, doc) impede duplicar o mesmo cliente, MAS doc
+///    e opcional (clientes informais entram so com nome).
+model Cliente {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nome      String
+  doc       String?  // CPF/CNPJ apenas digitos
+  whatsapp  String?
+  email     String?
+  endereco  String?
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recibos   Recibo[]
+
+  @@index([userId, nome])
+  @@index([userId, doc])
+}
+
+/// Recibo de pagamento (NAO substitui nota fiscal).
+/// Cada recibo gerado pelo app fica salvo aqui pra historico e pra reimpressao
+/// futura. O numero e sequencial por user (1, 2, 3, ...) — nao tem validade
+/// fiscal, e so pra organizacao.
+model Recibo {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clienteId String?
+  cliente   Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  numero    Int      // sequencial por user
+  data      DateTime
+  valor     Float
+  descricao String
+
+  // Snapshot dos dados na hora da emissao, pra recibo continuar igual mesmo
+  // se o cliente for editado/deletado depois.
+  clienteNome     String
+  clienteDoc      String?
+  clienteContato  String?  // whatsapp ou email usado no envio
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, data])
+  @@unique([userId, numero])
 }
