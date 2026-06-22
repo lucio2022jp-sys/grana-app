@@ -2,24 +2,47 @@ import Stripe from 'stripe';
 
 /**
  * Cliente Stripe centralizado. Usa a chave secreta do env.
- * pinned na apiVersion estavel atual; subir aqui qd Stripe lancar nova
- * e a gente revisar tipos.
+ *
+ * Atencao: instanciacao LAZY. O Next 14 chama "Collecting page data" nas
+ * route handlers durante o build, e se a STRIPE_SECRET_KEY nao tiver setada
+ * na Vercel, o `new Stripe('')` explode com "Neither apiKey nor
+ * config.authenticator provided" e quebra o deploy inteiro. Com lazy, o
+ * build passa e o erro aparece so quando alguem realmente chama o checkout
+ * em runtime — exatamente o comportamento que queremos.
  */
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  // Nao explode no import (build do Next pode rodar sem env), so quando alguem chama
-  console.warn('[stripe] STRIPE_SECRET_KEY ausente — checkout vai falhar em runtime');
+let _stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (_stripe) return _stripe;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      'STRIPE_SECRET_KEY ausente. Configure em Vercel > Settings > Environment Variables.',
+    );
+  }
+  _stripe = new Stripe(key, {
+    // @ts-expect-error - tipagem da apiVersion eh literal e muda a cada release
+    apiVersion: '2025-09-30.clover',
+    typescript: true,
+    appInfo: {
+      name: 'Grana App',
+      version: '1.0.0',
+    },
+  });
+  return _stripe;
 }
 
-// SDK 22.x usa apiVersion default da prop ressomente do .d.ts. Forçamos
-// como any pra nao travar build em uma string que muda toda upgrade.
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  // @ts-expect-error - tipagem da apiVersion eh literal e muda a cada release
-  apiVersion: '2025-09-30.clover',
-  typescript: true,
-  appInfo: {
-    name: 'Grana App',
-    version: '1.0.0',
+/**
+ * Proxy que delega tudo pra instancia real, instanciada na primeira chamada.
+ * Mantem a API antiga (`stripe.checkout.sessions.create(...)`) sem mexer
+ * nos call sites.
+ */
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop, receiver) {
+    const real = getStripe();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === 'function' ? value.bind(real) : value;
   },
 });
 
@@ -27,12 +50,8 @@ export const STRIPE_PRICE_PRO_MONTHLY =
   process.env.STRIPE_PRICE_PRO_MONTHLY ?? '';
 
 export function getAppUrl() {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.VERCEL_URL?.startsWith('http')
-      ? process.env.VERCEL_URL
-      : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-  );
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  const vercel = process.env.VERCEL_URL;
+  if (vercel) return vercel.startsWith('http') ? vercel : `https://${vercel}`;
+  return 'http://localhost:3000';
 }
