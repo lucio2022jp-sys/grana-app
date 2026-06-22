@@ -6,23 +6,18 @@ import { prisma } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 /**
- * Landing page do Grana.
+ * Landing v2 do Grana.
  *
- * Estrategia de copy:
- *  - Hero: gancho emocional ("ganha de verdade") + diferenciacao ("sem
- *    decorar nada")
- *  - Dores (3): cada uma e uma frase real que MEI pensa, em primeira pessoa
- *  - Features com prints "fake" do app: cada print esta dentro de um card
- *    pra o MEI ver o produto sem precisar logar
- *  - Pricing: Free + Pro R$ 17,90, com 7 dias gratis
- *  - FAQ: as perguntas que MEI realmente faz
- *  - CTA: tres oportunidades (hero, depois das features, depois do pricing)
+ * Direcao visual:
+ *  - Hero ESCURO (preto + gradientes radiais roxo/azul) com mockup de celular
+ *    em HTML mostrando o dashboard real. Glow e bordas com gradiente.
+ *  - Body CLARO premium (cards com glass sutil, bordas com gradiente, shadow-soft).
+ *  - CTA final ESCURO pra fechar com peso.
+ *  - Limite Free: 20 transacoes/mes (estoura no 1o mes => conversao).
  *
- * Visual: usa o design system do app (gradientes, emojis, rounded-3xl,
- * shadow-glow-cool). Mobile-first como o app inteiro.
+ * Referencias: Linear, Vercel, Cal.com.
  */
 export default async function HomePage() {
-  // Se ja tem sessao com transacoes, vai direto pro app
   const uid = cookies().get('grana_uid')?.value;
   if (uid) {
     try {
@@ -36,544 +31,668 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Header fixo simples */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      {/* ============ HEADER ============ */}
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">💰</span>
-            <span className="font-extrabold text-gray-900">Grana</span>
+            <span className="font-extrabold text-white">Grana</span>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="text-sm font-semibold text-gray-700 hover:text-secondary-600 px-3 py-1.5"
+              className="text-sm font-semibold text-white/80 hover:text-white px-3 py-1.5"
             >
               Entrar
             </Link>
             <Link
               href="/signup"
-              className="text-sm font-bold bg-gray-900 text-white px-4 py-2 rounded-full hover:scale-105 active:scale-95 transition"
+              className="text-sm font-semibold text-white bg-gradient-to-r from-fuchsia-500 to-violet-600 hover:from-fuchsia-400 hover:to-violet-500 px-4 py-2 rounded-full shadow-[0_8px_24px_-8px_rgba(168,85,247,0.6)]"
             >
-              Criar conta
+              Começar grátis
             </Link>
           </div>
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="relative bg-gradient-hero overflow-hidden">
-        <div className="absolute top-10 left-6 text-5xl animate-float opacity-90" aria-hidden>💰</div>
-        <div className="absolute top-20 right-8 text-4xl animate-float-slow opacity-80" aria-hidden>📊</div>
-        <div className="absolute top-40 left-10 text-3xl animate-float opacity-70" aria-hidden>✨</div>
-        <div className="absolute bottom-32 right-6 text-5xl animate-float-slow opacity-80" aria-hidden>💸</div>
+      {/* ============ HERO ESCURO ============ */}
+      <section className="relative overflow-hidden bg-black text-white">
+        {/* Camadas de glow */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-gradient-radial from-violet-600/30 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" style={{background: 'radial-gradient(circle, rgba(139,92,246,0.35) 0%, rgba(236,72,153,0.12) 35%, transparent 70%)'}}/>
+          <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full blur-3xl" style={{background: 'radial-gradient(circle, rgba(14,165,233,0.25) 0%, transparent 70%)'}}/>
+          <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full blur-3xl" style={{background: 'radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)'}}/>
+        </div>
 
-        <div className="max-w-4xl mx-auto px-5 py-16 md:py-24 text-center relative z-10">
-          <div className="inline-block bg-white/80 backdrop-blur-sm border border-white rounded-full px-4 py-1.5 mb-6 shadow-soft">
-            <span className="text-xs font-semibold text-secondary-600">
-              ✨ Pra MEI dormir tranquilo
-            </span>
-          </div>
+        {/* Grid sutil de fundo */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}/>
 
-          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-4 leading-tight">
-            Saiba quanto voce<br />
-            <span className="bg-gradient-to-r from-secondary-600 to-accent-pink bg-clip-text text-transparent">
-              ganha de verdade
-            </span>
-          </h1>
-
-          <p className="text-gray-700 text-lg md:text-xl font-medium mb-8 max-w-xl mx-auto">
-            DAS, notas, reserva pra imposto, faturamento.
-            Tudo organizado num lugar so. Direto no celular.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-            <Link
-              href="/signup"
-              className="bg-gradient-cool text-white font-bold py-4 px-8 rounded-full shadow-glow-cool hover:scale-105 active:scale-95 transition text-center text-lg"
-            >
-              Começar grátis 🚀
-            </Link>
-            <Link
-              href="/demo"
-              className="bg-white border-2 border-secondary-200 text-secondary-700 font-bold py-4 px-8 rounded-full hover:scale-105 active:scale-95 transition text-center"
-            >
-              Ver demonstração
-            </Link>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-4">
-            7 dias grátis · Sem cartão de crédito · Cancele quando quiser
-          </p>
-
-          {/* Social proof */}
-          <div className="mt-10 inline-flex items-center gap-3 bg-white/60 backdrop-blur rounded-full px-4 py-2 shadow-soft">
-            <div className="flex -space-x-2">
-              <div className="w-7 h-7 rounded-full bg-accent-pink flex items-center justify-center text-xs">👩</div>
-              <div className="w-7 h-7 rounded-full bg-accent-yellow flex items-center justify-center text-xs">🧑</div>
-              <div className="w-7 h-7 rounded-full bg-accent-green flex items-center justify-center text-xs">👨</div>
+        <div className="relative max-w-6xl mx-auto px-5 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-2 gap-12 items-center">
+          {/* Coluna esquerda — texto */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/80 mb-6">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/>
+              Pra MEI que quer parar de adivinhar
             </div>
-            <span className="text-xs text-gray-700 font-medium">+1.000 autônomos no controle</span>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6">
+              Quanto você
+              <br/>
+              <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                ganha de verdade?
+              </span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-white/70 mb-8 max-w-xl leading-relaxed">
+              Você reconhece isso: o dinheiro entra, mas no fim do mês some.
+              O <span className="text-white font-semibold">Grana</span> mostra
+              quanto sobra de verdade — depois do imposto, do material e da conta de luz.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 bg-white text-black font-bold px-6 py-4 rounded-2xl hover:scale-[1.02] active:scale-95 transition shadow-[0_20px_60px_-12px_rgba(255,255,255,0.4)]"
+              >
+                Começar grátis
+                <span>→</span>
+              </Link>
+              <Link
+                href="/demo"
+                className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/20 backdrop-blur-sm text-white font-semibold px-6 py-4 rounded-2xl hover:bg-white/10 transition"
+              >
+                Ver demonstração
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-white/60">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> 7 dias grátis
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Sem cartão
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Cancela quando quiser
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna direita — mockup de celular */}
+          <div className="relative flex justify-center md:justify-end">
+            {/* Glow atras do celular */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-[400px] h-[400px] rounded-full blur-3xl" style={{background: 'radial-gradient(circle, rgba(139,92,246,0.4) 0%, rgba(236,72,153,0.2) 40%, transparent 70%)'}}/>
+            </div>
+
+            {/* Frame do celular */}
+            <div className="relative w-[300px] md:w-[340px] aspect-[9/19] rounded-[3rem] bg-gradient-to-b from-zinc-800 to-zinc-900 p-3 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10">
+              {/* Notch */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-10"/>
+
+              {/* Tela do app */}
+              <div className="w-full h-full bg-gradient-to-b from-slate-50 to-white rounded-[2.3rem] overflow-hidden flex flex-col">
+                {/* Status bar fake */}
+                <div className="px-6 pt-2 pb-1 flex justify-between items-center text-[10px] font-semibold text-gray-900">
+                  <span>9:41</span>
+                  <span className="flex gap-1 items-center">
+                    <span>●●●●</span>
+                    <span>📶</span>
+                    <span>🔋</span>
+                  </span>
+                </div>
+
+                {/* Conteudo do dashboard */}
+                <div className="flex-1 overflow-hidden px-4 pt-8 pb-3 space-y-3">
+                  {/* Saudacao */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-[10px] text-gray-500 font-medium">Oi, Camila 👋</div>
+                      <div className="text-base font-extrabold text-gray-900">Junho 2026</div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-400 to-violet-500"/>
+                  </div>
+
+                  {/* Card destaque — sobrou */}
+                  <div className="rounded-2xl p-4 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-lg">
+                    <div className="text-[10px] font-semibold opacity-90 mb-1">SOBROU PRA VOCÊ</div>
+                    <div className="text-2xl font-extrabold tracking-tight">R$ 2.340,80</div>
+                    <div className="text-[10px] opacity-90 mt-1 flex items-center gap-1">
+                      <span>↑</span> +18% vs maio
+                    </div>
+                  </div>
+
+                  {/* Mini-cards */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl p-2.5 bg-emerald-50 border border-emerald-100">
+                      <div className="text-[9px] text-emerald-700 font-semibold">ENTROU</div>
+                      <div className="text-sm font-extrabold text-emerald-900">R$ 4.820</div>
+                    </div>
+                    <div className="rounded-xl p-2.5 bg-orange-50 border border-orange-100">
+                      <div className="text-[9px] text-orange-700 font-semibold">SAIU</div>
+                      <div className="text-sm font-extrabold text-orange-900">R$ 2.479</div>
+                    </div>
+                  </div>
+
+                  {/* Alerta DAS */}
+                  <div className="rounded-xl p-2.5 bg-amber-50 border border-amber-200 flex items-center gap-2">
+                    <span className="text-base">⏰</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-amber-900">DAS vence em 4 dias</div>
+                      <div className="text-[9px] text-amber-700">R$ 75,90 — clica pra pagar</div>
+                    </div>
+                  </div>
+
+                  {/* Alerta MEI */}
+                  <div className="rounded-xl p-2.5 bg-blue-50 border border-blue-200">
+                    <div className="text-[10px] font-bold text-blue-900 flex items-center gap-1">
+                      <span>📊</span> Limite MEI 2026
+                    </div>
+                    <div className="mt-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                      <div className="h-full w-[42%] bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"/>
+                    </div>
+                    <div className="text-[9px] text-blue-700 mt-1">R$ 34.200 / R$ 81.000 (tranquilo)</div>
+                  </div>
+
+                  {/* Lista mini de transacoes */}
+                  <div className="space-y-1.5">
+                    <div className="text-[9px] uppercase tracking-wide text-gray-500 font-bold">Hoje</div>
+                    <div className="bg-white rounded-xl p-2 border border-gray-100 flex justify-between items-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base">💅</span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold text-gray-900 truncate">Maria — alongamento</div>
+                          <div className="text-[9px] text-gray-500">cliente</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-extrabold text-emerald-600">+R$ 180</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-2 border border-gray-100 flex justify-between items-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base">🛒</span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold text-gray-900 truncate">Beauty Color — esmaltes</div>
+                          <div className="text-[9px] text-gray-500">produto</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-extrabold text-gray-900">R$ 89</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tab bar */}
+                <div className="border-t border-gray-100 px-3 py-2 flex justify-around bg-white">
+                  <span className="text-base">🏠</span>
+                  <span className="text-base opacity-40">💸</span>
+                  <span className="text-base opacity-40">📊</span>
+                  <span className="text-base opacity-40">👤</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Badge flutuante "ao vivo" */}
+            <div className="absolute -top-4 -right-4 md:-right-12 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/40 rotate-3">
+              ao vivo
+            </div>
           </div>
         </div>
       </section>
 
-      {/* DORES */}
-      <section className="bg-white py-16 md:py-24">
+      {/* ============ DORES ============ */}
+      <section className="relative bg-gradient-to-b from-white via-violet-50/30 to-white py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Voce reconhece isso?
+            <div className="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Você reconhece isso?
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              As 3 coisas que mais
+              <br/>
+              <span className="bg-gradient-to-r from-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
+                tiram seu sono
+              </span>
             </h2>
-            <p className="text-gray-600 text-lg">
-              A vida real do MEI antes de descobrir o Grana.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <DorCard
-              emoji="😰"
-              titulo='"Esqueci de pagar o DAS de novo"'
-              detalhe="Vem multa, juros, certidao negativa nega. CNPJ irregular sem voce ver."
-            />
-            <DorCard
-              emoji="😵"
-              titulo='"Nao sei quanto guardar pra imposto"'
-              detalhe="Quando vem cobranca da Receita, voce ja gastou tudo."
-            />
-            <DorCard
-              emoji="🤯"
-              titulo='"Misturo dinheiro pessoal com da empresa"'
-              detalhe="Ja nao sei mais quanto eu lucro de verdade no fim do mes."
-            />
-          </div>
-
-          {/* Quizzinho */}
-          <div className="mt-12 bg-gradient-to-br from-amber-50 to-pink-50 border-2 border-amber-200 rounded-3xl p-6 md:p-8">
-            <h3 className="font-extrabold text-gray-900 text-xl mb-4 text-center">
-              Responde rapido pra voce mesma:
-            </h3>
-            <ul className="space-y-3 max-w-xl mx-auto">
-              <Pergunta>Quanto voce faturou esse mes? E ano passado inteiro?</Pergunta>
-              <Pergunta>Esta perto do teto MEI? Vai estourar?</Pergunta>
-              <Pergunta>Tem 5 receitas sem nota fiscal emitida ai?</Pergunta>
-              <Pergunta>Ja entregou a DASN do ano passado?</Pergunta>
-            </ul>
-            <p className="text-center text-sm text-gray-700 mt-5 font-medium">
-              Se voce respondeu &quot;nao sei&quot; em pelo menos 2,
-              <br className="hidden sm:inline" /> o Grana foi feito pra voce.
-            </p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                emoji: '🤯',
+                titulo: '"Trabalho muito e o dinheiro some"',
+                desc: 'Você fatura R$ 5 mil, R$ 8 mil... mas no fim do mês olha a conta e tá zerada. Cadê o dinheiro?',
+                cor: 'from-rose-500 to-pink-500',
+              },
+              {
+                emoji: '😰',
+                titulo: '"Vou pagar imposto a mais ou a menos?"',
+                desc: 'DAS, Nota Fiscal, DASN. Cada termo é uma dor de cabeça. Você adia, deixa pra depois, e fica com medo da Receita.',
+                cor: 'from-orange-500 to-amber-500',
+              },
+              {
+                emoji: '📊',
+                titulo: '"Não sei se posso comprar isso"',
+                desc: 'Quer comprar um equipamento, pagar um curso, tirar férias. Mas você não sabe se tem dinheiro ou se vai quebrar.',
+                cor: 'from-violet-500 to-fuchsia-500',
+              },
+            ].map((d) => (
+              <div key={d.titulo} className="group relative bg-white rounded-3xl p-6 border border-gray-100 shadow-soft hover:shadow-xl transition">
+                <div className={`absolute -top-3 -right-3 w-12 h-12 rounded-2xl bg-gradient-to-br ${d.cor} flex items-center justify-center text-2xl shadow-lg`}>
+                  {d.emoji}
+                </div>
+                <h3 className="font-extrabold text-gray-900 text-lg mb-2 pr-12 leading-snug">
+                  {d.titulo}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{d.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURES com "prints" */}
-      <section className="bg-gray-50 py-16 md:py-24">
+      {/* ============ FEATURES ============ */}
+      <section className="relative bg-white py-20 md:py-28">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center mb-16">
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Como resolve
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              Tudo que você
+              <br/>
+              <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                precisa, em 1 app
+              </span>
+            </h2>
+          </div>
+
+          {/* Feature 1 - dashboard */}
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+            <div>
+              <div className="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold mb-4">DASHBOARD</div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
+                Quanto sobrou de verdade
+                <br/>
+                <span className="text-violet-600">depois do imposto</span>
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                Não é só "entrou menos saiu". A gente já tira o DAS, separa
+                gasto pessoal de trabalho, e mostra o lucro real do mês.
+              </p>
+              <ul className="space-y-3">
+                {['Lucro real (já com imposto descontado)', 'Comparativo com o mês anterior', 'Alertas inteligentes (limite MEI, DAS, notas)'].map(item => (
+                  <li key={item} className="flex items-start gap-3 text-gray-700">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-200 to-fuchsia-200 rounded-3xl blur-2xl opacity-50"/>
+              <div className="relative bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+                <div className="rounded-2xl p-5 bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white mb-4">
+                  <div className="text-xs font-semibold opacity-90 mb-1">SOBROU PRA VOCÊ EM JUNHO</div>
+                  <div className="text-4xl font-extrabold">R$ 2.340,80</div>
+                  <div className="text-xs opacity-90 mt-1">↑ +18% vs maio</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl p-3 bg-emerald-50 border border-emerald-100">
+                    <div className="text-xs text-emerald-700 font-semibold">ENTROU</div>
+                    <div className="text-lg font-extrabold text-emerald-900">R$ 4.820</div>
+                  </div>
+                  <div className="rounded-xl p-3 bg-orange-50 border border-orange-100">
+                    <div className="text-xs text-orange-700 font-semibold">SAIU + IMPOSTO</div>
+                    <div className="text-lg font-extrabold text-orange-900">R$ 2.479</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 2 - DAS */}
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+            <div className="relative md:order-2">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-orange-200 rounded-3xl blur-2xl opacity-50"/>
+              <div className="relative bg-white rounded-3xl p-6 border border-gray-100 shadow-xl space-y-3">
+                <div className="rounded-2xl p-4 bg-amber-50 border-2 border-amber-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">⏰</span>
+                    <div>
+                      <div className="font-extrabold text-amber-900">DAS vence em 4 dias</div>
+                      <div className="text-xs text-amber-700">20 de junho</div>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-extrabold text-amber-900 mb-2">R$ 75,90</div>
+                  <button className="w-full bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm">
+                    Pagar agora
+                  </button>
+                </div>
+                <div className="rounded-xl p-3 bg-emerald-50 border border-emerald-100 flex items-center gap-2">
+                  <span className="text-lg">✅</span>
+                  <div>
+                    <div className="text-xs font-bold text-emerald-900">Maio pago em 18/05</div>
+                    <div className="text-xs text-emerald-700">R$ 75,90</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="md:order-1">
+              <div className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold mb-4">DAS</div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
+                Lembrete de
+                <br/>
+                <span className="text-amber-600">imposto a pagar</span>
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                A gente avisa antes de vencer. Você clica, paga, marca como pago.
+                Nunca mais paga juros por esquecimento.
+              </p>
+              <ul className="space-y-3">
+                {['Alerta 7 dias e 1 dia antes', 'Email + push no celular', 'Histórico completo de pagamentos'].map(item => (
+                  <li key={item} className="flex items-start gap-3 text-gray-700">
+                    <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Feature 3 - IA nota */}
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+            <div>
+              <div className="inline-block px-3 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700 text-xs font-bold mb-4">
+                <span className="inline-flex items-center gap-1">
+                  ✨ IA
+                </span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
+                Tira foto da nota,
+                <br/>
+                <span className="text-fuchsia-600">a IA classifica</span>
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                Comprou material? Tira foto do cupom. A gente lê o valor,
+                a categoria, se é dedutível, e já lança. Você só confirma.
+              </p>
+              <ul className="space-y-3">
+                {['Lê cupom fiscal, nota e até foto de WhatsApp', 'Categoria + dedutível automático', 'Marca se é trabalho ou pessoal'].map(item => (
+                  <li key={item} className="flex items-start gap-3 text-gray-700">
+                    <span className="w-5 h-5 rounded-full bg-fuchsia-100 text-fuchsia-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-200 to-violet-200 rounded-3xl blur-2xl opacity-50"/>
+              <div className="relative bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+                <div className="rounded-2xl p-4 bg-gradient-to-br from-fuchsia-500 to-violet-600 text-white text-center mb-3">
+                  <div className="text-5xl mb-2">📸</div>
+                  <div className="text-sm font-bold">Capturar nota</div>
+                </div>
+                <div className="rounded-xl p-3 bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <span>✨</span> IA classificou:
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Estabelecimento</span>
+                    <span className="font-semibold text-gray-900">Beauty Color</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Valor</span>
+                    <span className="font-semibold text-gray-900">R$ 89,40</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Categoria</span>
+                    <span className="font-semibold text-fuchsia-700">🛒 Produto</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Dedutível</span>
+                    <span className="font-semibold text-emerald-700">Sim ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid de features menores */}
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {emoji: '📋', titulo: 'DASN-SIMEI guiada', desc: 'Números prontos pra colar no portal em maio. Não precisa contador.'},
+              {emoji: '🏖️', titulo: 'Reserva pra imposto', desc: 'Separa automaticamente 6% (ou o que você definir) de cada receita.'},
+              {emoji: '📊', titulo: 'Limite MEI ao vivo', desc: 'Mostra quanto falta pra estourar R$ 81 mil e avisa antes.'},
+              {emoji: '🧾', titulo: 'Recibo + WhatsApp', desc: 'Gera PDF profissional e manda pro cliente em 1 toque.'},
+              {emoji: '👥', titulo: 'Cadastro de clientes', desc: 'Histórico de quem paga em dia, quem deve, quem voltou.'},
+              {emoji: '📩', titulo: 'Relatório mensal', desc: 'Todo dia 5 chega no email um fechamento bonito do mês anterior.'},
+            ].map(f => (
+              <div key={f.titulo} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:border-violet-200 transition">
+                <div className="text-3xl mb-3">{f.emoji}</div>
+                <h4 className="font-extrabold text-gray-900 mb-1.5">{f.titulo}</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ DEPOIMENTOS ============ */}
+      <section className="bg-gradient-to-b from-violet-50/40 via-white to-white py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Tudo que MEI precisa em 1 app
+            <div className="inline-block px-3 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Quem usa, ama
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              MEIs como você,
+              <br/>
+              <span className="bg-gradient-to-r from-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
+                dormindo mais tranquilos
+              </span>
             </h2>
-            <p className="text-gray-600 text-lg">
-              Sem planilha. Sem decorar nada. Sem dor de cabeça.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <FeatureCard
-              emoji="🔍"
-              titulo="Checkup completo"
-              detalhe="Verde, amarelo, vermelho — entende seu status fiscal e financeiro em 5 segundos."
-              previewBg="bg-gradient-cool"
-              previewContent={
-                <div className="text-white">
-                  <div className="text-3xl mb-1">🟢</div>
-                  <div className="font-bold text-sm">Tudo em ordem</div>
-                  <div className="text-xs opacity-90">5 verde · 1 amarelo</div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {nome: 'Camila R.', tipo: 'Nail designer', foto: '💅', texto: 'Eu não sabia se tava lucrando. Hoje sei exatamente quanto sobra. Comprei minha cadeira nova sem medo.'},
+              {nome: 'João P.', tipo: 'Motorista App', foto: '🚗', texto: 'Antes deixava DAS atrasar e pagava juros. Agora o app me avisa, eu pago no PIX em 30 segundos.'},
+              {nome: 'Marina S.', tipo: 'Designer freelancer', foto: '🎨', texto: 'A IA da nota é mágica. Tiro foto do cupom, ela classifica, eu confirmo. Fim. Não decoro categoria nenhuma.'},
+            ].map(d => (
+              <div key={d.nome} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-soft hover:shadow-xl transition">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-400 to-violet-500 flex items-center justify-center text-2xl">
+                    {d.foto}
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-gray-900">{d.nome}</div>
+                    <div className="text-xs text-gray-500">{d.tipo}</div>
+                  </div>
                 </div>
-              }
-            />
-            <FeatureCard
-              emoji="💎"
-              titulo="Quanto sobrou pra voce"
-              detalhe="Receita menos despesas menos pro-labore. O numero que importa."
-              previewBg="bg-gradient-cool"
-              previewContent={
-                <div className="text-white">
-                  <div className="text-xs opacity-90 mb-1">Sobrou pra voce 💎</div>
-                  <div className="text-3xl font-extrabold">R$ 2.340</div>
-                </div>
-              }
-            />
-            <FeatureCard
-              emoji="📋"
-              titulo="DAS e DASN sem esquecer"
-              detalhe="Lembrete antes do vencimento. DASN com os 2 numeros prontos pra colar no portal."
-              previewBg="bg-gradient-warning"
-              previewContent={
-                <div className="text-orange-900">
-                  <div className="text-xs font-bold uppercase tracking-wide">DAS</div>
-                  <div className="font-bold text-sm">Vence em 4 dias</div>
-                  <div className="text-2xl font-extrabold mt-1">R$ 80,90</div>
-                </div>
-              }
-            />
-            <FeatureCard
-              emoji="🧾"
-              titulo="Recibo no WhatsApp"
-              detalhe="Cliente paga, voce gera recibo PDF no app e manda direto pra ele em 15 segundos."
-              previewBg="bg-gradient-pink"
-              previewContent={
-                <div className="text-white">
-                  <div className="text-xs opacity-90">Recibo pra Maria Silva</div>
-                  <div className="font-bold text-sm">Manicure - kit completo</div>
-                  <div className="text-2xl font-extrabold mt-1">R$ 80,00</div>
-                </div>
-              }
-            />
-            <FeatureCard
-              emoji="📸"
-              titulo="Foto da nota = transacao"
-              detalhe="Tira foto do cupom ou nota, IA classifica automatico. Sem digitar nada."
-              previewBg="bg-gradient-money"
-              previewContent={
-                <div className="text-white">
-                  <div className="text-xs opacity-90">📸 Nota lida</div>
-                  <div className="font-bold text-sm">Esmalte risque</div>
-                  <div className="text-xs mt-1">categoria: produto</div>
-                  <div className="text-2xl font-extrabold mt-1">R$ 12,90</div>
-                </div>
-              }
-            />
-            <FeatureCard
-              emoji="🐷"
-              titulo="Reserva automatica"
-              detalhe="A cada receita, sugere quanto guardar pra imposto. Voce nao e pega de surpresa."
-              previewBg="bg-gradient-money"
-              previewContent={
-                <div className="text-white">
-                  <div className="text-xs opacity-90 mb-1">🐷 Reservado esse mes</div>
-                  <div className="text-3xl font-extrabold">R$ 156</div>
-                  <div className="text-xs opacity-90 mt-1">de R$ 200 sugeridos</div>
-                </div>
-              }
-            />
+                <div className="text-yellow-400 mb-2">★★★★★</div>
+                <p className="text-gray-700 leading-relaxed italic">"{d.texto}"</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA INTERMEDIARIO */}
-      <section className="bg-white py-12">
-        <div className="max-w-3xl mx-auto px-5 text-center">
-          <Link
-            href="/signup"
-            className="inline-block bg-gradient-cool text-white font-bold py-4 px-10 rounded-full shadow-glow-cool hover:scale-105 active:scale-95 transition text-lg"
-          >
-            Quero organizar meu MEI →
-          </Link>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section id="precos" className="bg-gradient-to-b from-white to-gray-50 py-16 md:py-24">
-        <div className="max-w-4xl mx-auto px-5">
+      {/* ============ PRICING ============ */}
+      <section id="precos" className="bg-white py-20 md:py-28">
+        <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Preço justo pra MEI
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Preço
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-3">
+              Menos de
+              <br/>
+              <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                R$ 0,60 por dia
+              </span>
             </h2>
-            <p className="text-gray-600 text-lg">
-              Comece grátis. Pague só se valer a pena pra você.
-            </p>
+            <p className="text-gray-600 text-lg">Comece grátis. Faça upgrade quando crescer.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* Free */}
-            <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 md:p-8 flex flex-col">
-              <h3 className="text-xl font-extrabold text-gray-900">Grátis</h3>
-              <div className="mt-3 mb-1">
-                <span className="text-5xl font-extrabold text-gray-900">R$ 0</span>
-                <span className="text-gray-500">/sempre</span>
+            <div className="bg-white rounded-3xl p-7 border-2 border-gray-200">
+              <div className="mb-5">
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Grátis</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-gray-900">R$ 0</span>
+                  <span className="text-gray-500 text-sm">/sempre</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mb-6">Pra começar a se organizar.</p>
-
-              <ul className="space-y-2 text-sm text-gray-700 mb-6 flex-1">
-                <Feat>Ate 30 transacoes/mes</Feat>
-                <Feat>Dashboard com lucro real</Feat>
-                <Feat>Lembrete de DAS</Feat>
-                <Feat>DASN-SIMEI guiada</Feat>
-                <Feat>Importar extrato Pix</Feat>
-              </ul>
-
-              <Link
-                href="/signup"
-                className="block text-center bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-3 rounded-2xl transition active:scale-95"
-              >
+              <Link href="/signup" className="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3 rounded-2xl mb-6 transition">
                 Começar grátis
               </Link>
+              <ul className="space-y-2.5 text-sm">
+                {[
+                  'Até 20 transações por mês',
+                  'Dashboard com lucro real',
+                  'Lembrete de DAS',
+                  'Importar extrato (OFX/CSV)',
+                  'Cadastro de até 5 clientes',
+                ].map(i => (
+                  <li key={i} className="flex items-start gap-2 text-gray-700">
+                    <span className="text-emerald-500 mt-0.5">✓</span>{i}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Pro - destacado */}
-            <div className="relative bg-gradient-cool text-white rounded-3xl p-6 md:p-8 flex flex-col shadow-glow-cool">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-yellow text-amber-900 text-xs font-extrabold px-3 py-1 rounded-full">
-                ⭐ MAIS POPULAR
+            {/* Pro */}
+            <div className="relative bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 rounded-3xl p-7 text-white shadow-2xl shadow-violet-500/30">
+              <div className="absolute -top-3 right-7 bg-yellow-400 text-yellow-900 text-xs font-extrabold px-3 py-1 rounded-full">
+                MAIS POPULAR
               </div>
-              <h3 className="text-xl font-extrabold">Pro</h3>
-              <div className="mt-3 mb-1">
-                <span className="text-5xl font-extrabold">R$ 17,90</span>
-                <span className="opacity-80">/mes</span>
+              <div className="mb-5">
+                <div className="text-xs font-bold uppercase tracking-wider opacity-80 mb-1">Pro</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold">R$ 17,90</span>
+                  <span className="opacity-80 text-sm">/mês</span>
+                </div>
+                <div className="text-xs opacity-90 mt-1">ou R$ 179/ano (economiza 2 meses)</div>
               </div>
-              <p className="text-sm opacity-90 mb-6">
-                Ou R$ 179/ano (economiza R$ 35).
-              </p>
-
-              <ul className="space-y-2 text-sm mb-6 flex-1">
-                <Feat light>Tudo do Gratis</Feat>
-                <Feat light><strong>Transacoes ilimitadas</strong></Feat>
-                <Feat light>Foto da nota com IA</Feat>
-                <Feat light>Recibo PDF + WhatsApp</Feat>
-                <Feat light>Relatorio mensal automatico</Feat>
-                <Feat light>Reserva de imposto auto</Feat>
-                <Feat light>Historico DASN com PDF</Feat>
-                <Feat light>Cadastro de clientes</Feat>
-              </ul>
-
-              <Link
-                href="/signup"
-                className="block text-center bg-white text-secondary-700 font-extrabold py-3 rounded-2xl hover:scale-105 active:scale-95 transition"
-              >
-                Comecar 7 dias gratis
+              <Link href="/signup" className="block w-full text-center bg-white text-violet-700 font-extrabold py-3 rounded-2xl mb-6 hover:scale-[1.02] transition">
+                Começar 7 dias grátis
               </Link>
-              <p className="text-xs opacity-80 text-center mt-2">
-                Sem cartao de credito
-              </p>
+              <ul className="space-y-2.5 text-sm">
+                {[
+                  'Tudo do Grátis +',
+                  'Transações ILIMITADAS',
+                  '✨ Foto da nota com IA',
+                  '🧾 Recibo PDF + WhatsApp',
+                  '📩 Relatório mensal automático',
+                  '📋 DASN-SIMEI com histórico',
+                  '👥 Clientes ilimitados',
+                  '🏖️ Reserva de impostos automática',
+                ].map(i => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-emerald-300 mt-0.5">✓</span>{i}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
           <p className="text-center text-sm text-gray-500 mt-8">
-            🛡️ Garantia: cancele quando quiser. Seus dados sao seus.
+            7 dias grátis. Sem cartão pra começar. Cancela quando quiser.
           </p>
         </div>
       </section>
 
-      {/* DEPOIMENTOS */}
-      <section className="bg-white py-16 md:py-24">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Quem usa fala
-            </h2>
-            <p className="text-gray-600 text-lg">MEIs reais, profissoes diferentes.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <Depoimento
-              foto="👩"
-              nome="Mariana"
-              profissao="Manicure · SP"
-              texto="Antes eu achava que tava ganhando bem. Quando vi o app, descobri que tava gastando mais do que ganhava em coisa pessoal. Mudou meu jeito de gerir."
-            />
-            <Depoimento
-              foto="🧑"
-              nome="Carlos"
-              profissao="Motorista app · PR"
-              texto="O lembrete de DAS me salvou ja 3 vezes. Eu esquecia toda vez e pagava com multa. Agora chega o aviso e eu pago no dia."
-            />
-            <Depoimento
-              foto="👨"
-              nome="Bruno"
-              profissao="Designer freela · BH"
-              texto="A foto da nota com IA é genial. Eu so fotografo o cupom da gasolina e ja entra como despesa dedutivel. Em 1 segundo."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="bg-gray-50 py-16 md:py-24">
+      {/* ============ FAQ ============ */}
+      <section className="bg-gradient-to-b from-white to-violet-50/30 py-20 md:py-28">
         <div className="max-w-3xl mx-auto px-5">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Perguntas frequentes
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              Perguntas que
+              <br/>
+              <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                MEIs sempre fazem
+              </span>
             </h2>
           </div>
 
           <div className="space-y-3">
-            <FAQItem
-              q="Eu preciso de contador pra usar o Grana?"
-              a="Nao. O app foi feito pra MEI puro, que tem obrigacoes simples (DAS mensal e DASN anual). Se voce sair do MEI ou virar Simples Nacional, ai sim recomenda contador — e a gente tem parceiros pra te indicar."
-            />
-            <FAQItem
-              q="O app substitui contador?"
-              a="Pra MEI puro, sim — voce mesma cumpre tudo. Pra outros regimes (Simples, Lucro Presumido), o Grana ajuda a se organizar mas voce ainda precisa de contador. A gente foi feito pra MEI."
-            />
-            <FAQItem
-              q="Funciona se eu nao tenho CNPJ ainda?"
-              a="Sim. Voce pode usar o app pra organizar sua grana antes de virar MEI. Quando virar, a gente te avisa do DAS, DASN e teto."
-            />
-            <FAQItem
-              q="Os calculos sao oficiais?"
-              a="Sao estimativas baseadas nas suas transacoes. O app organiza pra voce ter clareza, mas a fonte oficial e sempre o portal da Receita / portal do MEI. Antes de declarar, sempre confira por la."
-            />
-            <FAQItem
-              q="Meus dados ficam seguros?"
-              a="Sim. Tudo criptografado, banco de dados protegido, foto de comprovante em URL temporaria que expira em 5 minutos. Nao vendemos seus dados pra ninguem."
-            />
-            <FAQItem
-              q="Posso usar pelo celular?"
-              a="Sim, o app foi feito pensado primeiro pro celular. Da pra instalar como aplicativo no Android e iPhone (PWA)."
-            />
-            <FAQItem
-              q="Posso cancelar quando quiser?"
-              a="Sim. Sem multa, sem fidelidade, sem precisar ligar. Cancela direto no app."
-            />
+            {[
+              {q: 'Preciso entender de contabilidade?', a: 'Não. O app fala em português de gente. "Sobrou pra você", "vai pagar imposto", "tá tranquilo no limite MEI". Sem termo técnico.'},
+              {q: 'Substitui meu contador?', a: 'Pra MEI, sim. A DASN-SIMEI a gente entrega prontinha pra você colar no portal. Se você vira ME (Simples), aí vale ter contador.'},
+              {q: 'E se eu não for MEI ainda?', a: 'Você pode começar mesmo assim. Mas o app é otimizado pra MEI — alertas, limites e reservas são pensados pra esse regime.'},
+              {q: 'Meus dados ficam seguros?', a: 'Sim. Senha criptografada, banco com SSL, e a gente nunca compartilha nada com terceiros. Pode exportar e apagar tudo quando quiser.'},
+              {q: 'Posso testar sem pagar?', a: 'Pode. O plano Free já dá pra usar o básico pra sempre. E o Pro tem 7 dias grátis sem cartão.'},
+              {q: 'Como cancelo?', a: 'Em 1 clique nas configurações. Sem ligação, sem retenção, sem chato.'},
+            ].map((f, i) => (
+              <details key={i} className="group bg-white rounded-2xl border border-gray-100 hover:border-violet-200 transition overflow-hidden">
+                <summary className="flex justify-between items-center p-5 cursor-pointer list-none">
+                  <span className="font-extrabold text-gray-900 pr-4">{f.q}</span>
+                  <span className="text-violet-600 text-2xl group-open:rotate-45 transition flex-shrink-0">+</span>
+                </summary>
+                <div className="px-5 pb-5 text-gray-600 leading-relaxed">{f.a}</div>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="bg-gradient-cool text-white py-16 md:py-24">
-        <div className="max-w-3xl mx-auto px-5 text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold mb-4">
-            Cada mes sem organizar
-            <br />é dinheiro sumindo.
+      {/* ============ CTA FINAL ESCURO ============ */}
+      <section className="relative overflow-hidden bg-black text-white py-24 md:py-32">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl" style={{background: 'radial-gradient(circle, rgba(139,92,246,0.4) 0%, rgba(236,72,153,0.2) 35%, transparent 70%)'}}/>
+        </div>
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}/>
+
+        <div className="relative max-w-3xl mx-auto px-5 text-center">
+          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6">
+            Comece a saber
+            <br/>
+            <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+              quanto você ganha
+            </span>
           </h2>
-          <p className="text-lg md:text-xl opacity-90 mb-8">
-            Comece grátis hoje. Em 5 minutos voce ja sabe quanto sobra de verdade.
+          <p className="text-xl text-white/70 mb-10">
+            7 dias grátis. Sem cartão. Cancela quando quiser.
           </p>
-          <Link
-            href="/signup"
-            className="inline-block bg-white text-secondary-700 font-extrabold py-4 px-10 rounded-full hover:scale-105 active:scale-95 transition text-lg shadow-2xl"
-          >
-            Criar conta grátis 🚀
-          </Link>
-          <p className="text-xs opacity-80 mt-4">
-            7 dias gratis no Pro · Sem cartao · Cancele quando quiser
-          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center gap-2 bg-white text-black font-bold px-8 py-4 rounded-2xl hover:scale-[1.02] active:scale-95 transition shadow-[0_20px_60px_-12px_rgba(255,255,255,0.4)]"
+            >
+              Começar grátis
+              <span>→</span>
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/20 backdrop-blur-sm text-white font-semibold px-8 py-4 rounded-2xl hover:bg-white/10 transition"
+            >
+              Ver demonstração
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="flex flex-col md:flex-row gap-6 justify-between items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">💰</span>
-              <span className="font-extrabold text-white">Grana</span>
-              <span className="text-xs ml-2">© 2026</span>
-            </div>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <Link href="/login" className="hover:text-white">Entrar</Link>
-              <Link href="/signup" className="hover:text-white">Criar conta</Link>
-              <Link href="/demo" className="hover:text-white">Ver demonstração</Link>
-              <a href="mailto:contato@grana.app" className="hover:text-white">Contato</a>
-            </div>
+      {/* ============ FOOTER ============ */}
+      <footer className="bg-black border-t border-white/10 text-white/60 py-10">
+        <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">💰</span>
+            <span className="font-extrabold text-white">Grana</span>
+            <span className="text-xs ml-2">© 2026</span>
           </div>
-          <p className="text-xs text-gray-500 mt-8 text-center">
-            Grana e um app de organizacao financeira. Nao substitui orientacao
-            contabil ou juridica profissional.
-          </p>
+          <div className="flex items-center gap-4 text-sm">
+            <Link href="/privacidade" className="hover:text-white">Privacidade</Link>
+            <Link href="/termos" className="hover:text-white">Termos</Link>
+            <a href="mailto:ola@grana.app" className="hover:text-white">Contato</a>
+          </div>
         </div>
       </footer>
     </main>
-  );
-}
-
-// =============== Componentes auxiliares ===============
-
-function DorCard({ emoji, titulo, detalhe }: { emoji: string; titulo: string; detalhe: string }) {
-  return (
-    <div className="bg-white border-2 border-gray-100 rounded-3xl p-6 hover:border-secondary-200 hover:shadow-soft transition">
-      <div className="text-4xl mb-3">{emoji}</div>
-      <h3 className="font-extrabold text-gray-900 mb-2 leading-tight">{titulo}</h3>
-      <p className="text-sm text-gray-600 leading-relaxed">{detalhe}</p>
-    </div>
-  );
-}
-
-function Pergunta({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-3 text-gray-800">
-      <span className="text-xl shrink-0">❓</span>
-      <span className="text-sm md:text-base">{children}</span>
-    </li>
-  );
-}
-
-function FeatureCard({
-  emoji,
-  titulo,
-  detalhe,
-  previewBg,
-  previewContent,
-}: {
-  emoji: string;
-  titulo: string;
-  detalhe: string;
-  previewBg: string;
-  previewContent: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white border-2 border-gray-100 rounded-3xl p-6 hover:shadow-soft transition">
-      <div className="flex items-start gap-3 mb-4">
-        <span className="text-3xl">{emoji}</span>
-        <div>
-          <h3 className="font-extrabold text-gray-900 leading-tight mb-1">{titulo}</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">{detalhe}</p>
-        </div>
-      </div>
-      {/* "Print" do app */}
-      <div className={`${previewBg} rounded-2xl p-4 shadow-soft`}>
-        {previewContent}
-      </div>
-    </div>
-  );
-}
-
-function Feat({ children, light }: { children: React.ReactNode; light?: boolean }) {
-  return (
-    <li className="flex items-start gap-2">
-      <span className={light ? 'text-white' : 'text-emerald-600'}>✓</span>
-      <span>{children}</span>
-    </li>
-  );
-}
-
-function Depoimento({
-  foto,
-  nome,
-  profissao,
-  texto,
-}: {
-  foto: string;
-  nome: string;
-  profissao: string;
-  texto: string;
-}) {
-  return (
-    <div className="bg-white border-2 border-gray-100 rounded-3xl p-6">
-      <p className="text-sm text-gray-700 italic mb-4 leading-relaxed">
-        &ldquo;{texto}&rdquo;
-      </p>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-accent-pink flex items-center justify-center text-xl">
-          {foto}
-        </div>
-        <div>
-          <div className="font-bold text-gray-900 text-sm">{nome}</div>
-          <div className="text-xs text-gray-500">{profissao}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FAQItem({ q, a }: { q: string; a: string }) {
-  return (
-    <details className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-secondary-200 transition">
-      <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
-        <h3 className="font-bold text-gray-900 text-sm md:text-base">{q}</h3>
-        <span className="text-gray-400 text-xl transition-transform group-open:rotate-45">＋</span>
-      </summary>
-      <p className="text-sm text-gray-600 mt-3 leading-relaxed">{a}</p>
-    </details>
   );
 }
