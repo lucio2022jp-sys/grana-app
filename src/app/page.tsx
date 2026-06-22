@@ -533,7 +533,7 @@ export default async function HomePage() {
                 R$ 0,60 por dia
               </span>
             </h2>
-            <p className="text-gray-600 text-lg">Comece grátis. Faça upgrade quando crescer.</p>
+            <p className="text-gray-600 text-lg">Comece com 7 dias de Pro grátis pra testar tudo. Sem cartão.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
@@ -551,10 +551,10 @@ export default async function HomePage() {
               </Link>
               <ul className="space-y-2.5 text-sm">
                 {[
-                  'Até 20 transações por mês',
+                  'Importação inicial do extrato ilimitada',
+                  '20 lançamentos novos por mês',
                   'Dashboard com lucro real',
                   'Lembrete de DAS',
-                  'Importar extrato (OFX/CSV)',
                   'Cadastro de até 5 clientes',
                 ].map(i => (
                   <li key={i} className="flex items-start gap-2 text-gray-700">
@@ -583,7 +583,7 @@ export default async function HomePage() {
               <ul className="space-y-2.5 text-sm">
                 {[
                   'Tudo do Grátis +',
-                  'Transações ILIMITADAS',
+                  'Lançamentos ILIMITADOS',
                   '✨ Foto da nota com IA',
                   '🧾 Recibo PDF + WhatsApp',
                   '📩 Relatório mensal automático',
@@ -620,11 +620,11 @@ export default async function HomePage() {
 
           <div className="space-y-3">
             {[
+              {q: 'Como funciona o teste grátis?', a: 'Você cria conta e ganha 7 dias de Pro grátis pra testar tudo — sem precisar de cartão. Pode importar seu extrato inteiro (sem limite no onboarding), tirar foto de nota com IA, gerar recibo, ver dashboard completo. No 8º dia, se quiser continuar, é R$ 17,90/mês. Se não, vira Free com até 20 lançamentos novos por mês — e o histórico que você importou continua todo lá.'},
               {q: 'Preciso entender de contabilidade?', a: 'Não. O app fala em português de gente. "Sobrou pra você", "vai pagar imposto", "tá tranquilo no limite MEI". Sem termo técnico.'},
               {q: 'Substitui meu contador?', a: 'Pra MEI, sim. A DASN-SIMEI a gente entrega prontinha pra você colar no portal. Se você vira ME (Simples), aí vale ter contador.'},
               {q: 'E se eu não for MEI ainda?', a: 'Você pode começar mesmo assim. Mas o app é otimizado pra MEI — alertas, limites e reservas são pensados pra esse regime.'},
               {q: 'Meus dados ficam seguros?', a: 'Sim. Senha criptografada, banco com SSL, e a gente nunca compartilha nada com terceiros. Pode exportar e apagar tudo quando quiser.'},
-              {q: 'Posso testar sem pagar?', a: 'Pode. O plano Free já dá pra usar o básico pra sempre. E o Pro tem 7 dias grátis sem cartão.'},
               {q: 'Como cancelo?', a: 'Em 1 clique nas configurações. Sem ligação, sem retenção, sem chato.'},
             ].map((f, i) => (
               <details key={i} className="group bg-white rounded-2xl border border-gray-100 hover:border-violet-200 transition overflow-hidden">
