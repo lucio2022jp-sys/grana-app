@@ -49,6 +49,7 @@ export async function PATCH(
         source: 'manual',
         userConfirmed: true,
         notes: 'Pagamento DAS automatico',
+        imported: true,
       },
     });
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CapturarNotaButton from '@/components/CapturarNotaButton';
+import PlanBanner from '@/components/PlanBanner';
 
 type Dashboard = {
   empty: boolean;
@@ -207,6 +208,7 @@ export default function AppHome() {
 
   return (
     <main className="flex-1 p-5">
+      <PlanBanner />
       <div className="mb-4 animate-pop-in flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">Resumo</h1>

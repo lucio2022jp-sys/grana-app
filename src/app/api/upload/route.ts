@@ -132,6 +132,7 @@ export async function POST(req: NextRequest) {
                 aiSuggested: true,
                 userConfirmed: autoConfirmed,
                 notes: cls.reasoning,
+                imported: true,
               },
             });
           }),

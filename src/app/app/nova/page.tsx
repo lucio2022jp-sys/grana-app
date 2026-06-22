@@ -96,6 +96,10 @@ export default function NovaTransacao() {
 
       if (!res.ok) {
         const d = await res.json();
+        if (res.status === 402) {
+          setError(d.message ?? 'Limite mensal atingido. Faca upgrade pra Pro.');
+          return;
+        }
         setError(d.error ?? 'Erro');
         setLoading(false);
         return;

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCookieOptions, getUserCookieName } from '@/lib/session';
+import {
+  canCreateNewTransaction,
+  consumeTransactionQuota,
+  ensureTrialOnNewUser,
+} from '@/lib/billing';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +68,22 @@ export async function POST(req: NextRequest) {
     if (!user) {
       user = await prisma.user.create({ data: {} });
       uid = user.id;
+      // Conta nova ganha 7 dias de trial Pro automatico.
+      await ensureTrialOnNewUser(user.id);
+    }
+
+    // Gate de billing: free tem limite de lancamentos novos por mes.
+    // Trial Pro (7 dias) e plano Pro pulam o gate.
+    const gate = await canCreateNewTransaction(user.id);
+    if (!gate.ok) {
+      return NextResponse.json(
+        {
+          error: 'limit_reached',
+          message: `Voce atingiu o limite de ${gate.status.monthlyNewTxLimit} lancamentos novos no mes do plano Free. Faca upgrade pra Pro pra liberar ilimitado.`,
+          plan: gate.status,
+        },
+        { status: 402 },
+      );
     }
 
     const tx = await prisma.transaction.create({
@@ -78,8 +99,16 @@ export async function POST(req: NextRequest) {
         isPersonal: data.isPersonal ?? false,
         source: 'manual',
         userConfirmed: true,
+        imported: false,
       },
     });
+
+    // Consome cota apos sucesso. Nao falhar a request se isso der erro.
+    try {
+      await consumeTransactionQuota(user.id);
+    } catch (err) {
+      console.error('[POST /api/transactions] erro ao consumir cota:', err);
+    }
 
     const response = NextResponse.json({ transaction: tx });
     response.cookies.set(cookieName, user.id, getCookieOptions());

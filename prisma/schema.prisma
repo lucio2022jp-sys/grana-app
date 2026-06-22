@@ -48,6 +48,22 @@ model User {
   /// null = usar o default da lib (8% pra Simples, fixo pra MEI).
   taxReserveAutoPercent Int?
 
+  /// Plano de billing. "free" (default) ou "pro". Quando "free" + trial
+  /// ativo (trialEndsAt no futuro), o usuario tem acesso completo Pro.
+  plan          String    @default("free")
+  /// Fim do trial gratuito de Pro. Setado em createdAt+7d na criacao da conta.
+  /// Quando NULL, sem trial (ja consumiu ou conta antiga sem migracao).
+  trialEndsAt   DateTime?
+
+  /// Contador de lancamentos NOVOS (manuais) feitos no mes corrente.
+  /// Importacoes do onboarding (imported=true) e tx automaticas (DAS)
+  /// nao incrementam isso. Reseta no primeiro dia do mes via cron ou
+  /// lazy na primeira chamada do mes.
+  monthlyNewTxCount   Int      @default(0)
+  /// Inicio do "mes contabil" do contador. Quando o mes corrente difere,
+  /// zera o contador e atualiza pra primeiro do mes atual.
+  monthlyNewTxResetAt DateTime @default(now())
+
   taxReserves TaxReserve[]
   clientes    Cliente[]
   recibos     Recibo[]
@@ -167,6 +183,12 @@ model Transaction {
   notes           String?
   attachmentUrl   String?
   notaNumero      String?  // numero da NF emitida pra esta receita
+
+  /// Marca que esta tx veio de importacao em massa (extrato OFX/CSV) ou
+  /// foi gerada automaticamente pelo sistema (ex: lancamento de DAS pago).
+  /// imported=true NAO consome cota mensal de lancamentos novos no plano
+  /// Free. Lancamentos manuais ficam imported=false.
+  imported        Boolean  @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
