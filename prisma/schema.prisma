@@ -55,6 +55,14 @@ model User {
   /// Quando NULL, sem trial (ja consumiu ou conta antiga sem migracao).
   trialEndsAt   DateTime?
 
+  /// Stripe. customerId vincula a conta nossa ao Customer do Stripe. Setado
+  /// na primeira sessao de checkout. subscriptionId guarda a assinatura ativa
+  /// (atualizado via webhook). planUntil é a data de fim do periodo pago:
+  /// quando expira sem renovar, volta pro free.
+  stripeCustomerId      String?  @unique
+  stripeSubscriptionId  String?
+  planUntil             DateTime?
+
   /// Contador de lancamentos NOVOS (manuais) feitos no mes corrente.
   /// Importacoes do onboarding (imported=true) e tx automaticas (DAS)
   /// nao incrementam isso. Reseta no primeiro dia do mes via cron ou

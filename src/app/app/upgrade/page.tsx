@@ -1,13 +1,32 @@
+'use client';
+
 /**
- * Página de upgrade Pro. Por enquanto sem checkout integrado —
- * apenas apresenta o plano e abre canal de contato. Quando o gateway
- * (Stripe/MercadoPago) entrar, troca o CTA por uma session de checkout.
+ * Pagina de upgrade Pro. Botao "Quero o Pro" chama POST /api/stripe/checkout
+ * e redireciona pra Checkout Session do Stripe.
  */
 import Link from 'next/link';
-
-export const metadata = { title: 'Upgrade Pro — Grana' };
+import { useState } from 'react';
 
 export default function UpgradePage() {
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function iniciarCheckout() {
+    setErro(null);
+    setLoading(true);
+    try {
+      const r = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok || !data.url) {
+        throw new Error(data?.error ?? 'Nao consegui abrir o checkout');
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      setErro(e?.message ?? 'Falha ao abrir checkout');
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="flex-1 p-5 max-w-md mx-auto">
       <div className="mb-6">
@@ -77,23 +96,23 @@ export default function UpgradePage() {
         </ul>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-sm text-amber-900">
-        <div className="font-semibold mb-1">Em breve: pagamento online</div>
-        <p className="text-xs text-amber-800">
-          Estamos integrando o checkout. Por enquanto, fala com a gente que
-          liberamos manualmente.
-        </p>
-      </div>
+      {erro && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-4 text-sm text-red-700">
+          {erro}
+        </div>
+      )}
 
-      <a
-        href="mailto:contato@granamei.com.br?subject=Quero%20o%20Pro"
-        className="block w-full bg-violet-600 text-white text-center font-semibold py-3 rounded-2xl hover:bg-violet-700 transition"
+      <button
+        onClick={iniciarCheckout}
+        disabled={loading}
+        className="block w-full bg-violet-600 text-white text-center font-semibold py-3 rounded-2xl hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
       >
-        Quero o Pro
-      </a>
+        {loading ? 'Abrindo checkout...' : 'Quero o Pro'}
+      </button>
 
       <p className="text-xs text-gray-500 text-center mt-4">
-        Plano Free continua com 20 lancamentos manuais por mes.
+        Pagamento seguro pelo Stripe. Plano Free continua com 20 lancamentos
+        manuais por mes.
       </p>
     </main>
   );

@@ -36,6 +36,9 @@ export default function PerfilPage() {
   const [contadorEmail, setContadorEmail] = useState('');
   const [reminderDas, setReminderDas] = useState(true);
   const [reminderInactivity, setReminderInactivity] = useState(true);
+  const [plan, setPlan] = useState<'free' | 'pro'>('free');
+  const [planUntil, setPlanUntil] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   // Bloco do contador fica fechado por padrao. So abre se ja tem dado
   // cadastrado, ou se a usuaria clicar pra expandir. MEI puro nao precisa.
@@ -59,6 +62,8 @@ export default function PerfilPage() {
           }
           setReminderDas(d.user.reminderDasEnabled ?? true);
           setReminderInactivity(d.user.reminderInactivityEnabled ?? true);
+          setPlan((d.user.plan as 'free' | 'pro') ?? 'free');
+          setPlanUntil(d.user.planUntil ?? null);
         }
       });
   }, []);
@@ -82,6 +87,21 @@ export default function PerfilPage() {
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  async function abrirPortal() {
+    setPortalLoading(true);
+    try {
+      const r = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok || !data.url) {
+        throw new Error(data?.error ?? 'Falha ao abrir portal');
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      alert(e?.message ?? 'Falha ao abrir portal');
+      setPortalLoading(false);
+    }
   }
 
   return (
@@ -263,6 +283,47 @@ export default function PerfilPage() {
       >
         {saved ? '✓ Salvo!' : '💾 Salvar'}
       </button>
+
+      {/* Card de plano. Mostra estado atual e link pra checkout ou portal. */}
+      <div className="mt-6 mb-2 bg-white border-2 border-violet-200 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-violet-700 font-bold">
+              Plano
+            </div>
+            <div className="text-lg font-extrabold text-gray-900">
+              {plan === 'pro' ? '🚀 Pro' : 'Free'}
+            </div>
+            {plan === 'pro' && planUntil && (
+              <div className="text-xs text-gray-500 mt-0.5">
+                Proxima cobranca:{' '}
+                {new Date(planUntil).toLocaleDateString('pt-BR')}
+              </div>
+            )}
+            {plan === 'free' && (
+              <div className="text-xs text-gray-500 mt-0.5">
+                20 lancamentos manuais por mes
+              </div>
+            )}
+          </div>
+        </div>
+        {plan === 'pro' ? (
+          <button
+            onClick={abrirPortal}
+            disabled={portalLoading}
+            className="w-full bg-white border-2 border-violet-300 text-violet-700 font-semibold py-2.5 rounded-xl hover:bg-violet-50 disabled:opacity-60 transition text-sm"
+          >
+            {portalLoading ? 'Abrindo...' : 'Gerenciar assinatura'}
+          </button>
+        ) : (
+          <Link
+            href="/app/upgrade"
+            className="block w-full bg-violet-600 text-white text-center font-semibold py-2.5 rounded-xl hover:bg-violet-700 transition text-sm"
+          >
+            Conhecer o Pro
+          </Link>
+        )}
+      </div>
 
       <div className="mt-8 space-y-3">
         <CapturarNotaButton />
