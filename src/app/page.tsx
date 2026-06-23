@@ -100,12 +100,12 @@ export default async function HomePage() {
                 Começar grátis
                 <span>→</span>
               </Link>
-              <Link
-                href="/demo"
+              <a
+                href="#precos"
                 className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/20 backdrop-blur-sm text-white font-semibold px-6 py-4 rounded-2xl hover:bg-white/10 transition"
               >
-                Ver demonstração
-              </Link>
+                Ver preços
+              </a>
             </div>
 
             <div className="flex items-center gap-6 text-sm text-white/60">
@@ -479,42 +479,157 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ============ DEPOIMENTOS ============ */}
+      {/* ============ COMPARATIVO PLANILHA vs GRANA ============ */}
+      <section className="bg-gradient-to-b from-white via-slate-50 to-white py-20 md:py-28">
+        <div className="max-w-5xl mx-auto px-5">
+          <div className="text-center mb-12">
+            <div className="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Comparativo
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              Sai da planilha do Excel,
+              <br/>
+              <span className="bg-gradient-to-r from-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
+                vem pro Grana
+              </span>
+            </h2>
+            <p className="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">
+              Planilha funciona quando começa. Mas chega num ponto que fórmula quebra,
+              backup some, e você passa o domingo arrumando.
+            </p>
+          </div>
+
+          {/* Tabela desktop */}
+          <div className="hidden md:block bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-100">
+                  <th className="text-left p-5 text-sm font-bold text-gray-500 uppercase tracking-wider">O que você precisa</th>
+                  <th className="text-center p-5 text-sm font-bold text-gray-500 uppercase tracking-wider">📊 Planilha</th>
+                  <th className="text-center p-5 bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white text-sm font-bold uppercase tracking-wider">
+                    💰 Grana
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-700">
+                {[
+                  {label: 'Calcular DAS do mês', planilha: 'manual, todo mês', grana: 'automático'},
+                  {label: 'Lembrete de imposto a vencer', planilha: '❌ esquece e paga juros', grana: '✓ 7 e 1 dia antes'},
+                  {label: 'Lucro real (já com imposto)', planilha: 'só se souber a fórmula', grana: '✓ na tela inicial'},
+                  {label: 'Foto da nota fiscal', planilha: 'impossível', grana: '✓ IA classifica'},
+                  {label: 'Limite MEI ao vivo', planilha: 'soma na mão', grana: '✓ barra de progresso'},
+                  {label: 'Recibo PDF pro cliente', planilha: 'monta no Word', grana: '✓ 1 toque + WhatsApp'},
+                  {label: 'DASN-SIMEI em maio', planilha: 'pânico', grana: '✓ pronta pra colar'},
+                  {label: 'Backup', planilha: 'Drive, se lembrar', grana: '✓ na nuvem 24/7'},
+                  {label: 'Funciona no celular', planilha: 'travada e zoom', grana: '✓ feito pra mobile'},
+                  {label: 'Tempo gasto por mês', planilha: '~3 horas', grana: '~10 minutos', destaque: true},
+                ].map((row, i) => (
+                  <tr key={row.label} className={`border-b border-gray-50 ${row.destaque ? 'bg-emerald-50/40' : i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
+                    <td className="p-4 font-semibold text-gray-900">{row.label}</td>
+                    <td className="p-4 text-center text-gray-500 text-sm">{row.planilha}</td>
+                    <td className={`p-4 text-center font-bold text-sm ${row.destaque ? 'text-emerald-700' : 'text-violet-700'}`}>{row.grana}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Versão mobile (cards) */}
+          <div className="md:hidden space-y-3">
+            {[
+              {label: 'Calcular DAS do mês', planilha: 'manual, todo mês', grana: 'automático'},
+              {label: 'Lembrete de imposto', planilha: 'esquece e paga juros', grana: '7 e 1 dia antes'},
+              {label: 'Lucro real (com imposto)', planilha: 'só se souber a fórmula', grana: 'na tela inicial'},
+              {label: 'Foto da nota fiscal', planilha: 'impossível', grana: 'IA classifica'},
+              {label: 'Limite MEI ao vivo', planilha: 'soma na mão', grana: 'barra de progresso'},
+              {label: 'Recibo pro cliente', planilha: 'monta no Word', grana: '1 toque + WhatsApp'},
+              {label: 'DASN-SIMEI em maio', planilha: 'pânico', grana: 'pronta pra colar'},
+              {label: 'Tempo por mês', planilha: '~3 horas', grana: '~10 min', destaque: true},
+            ].map(row => (
+              <div key={row.label} className={`rounded-2xl p-4 border ${row.destaque ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'} shadow-sm`}>
+                <div className="font-extrabold text-gray-900 mb-3 text-sm">{row.label}</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">📊 Planilha</div>
+                    <div className="text-sm text-gray-600">{row.planilha}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-violet-700 font-bold mb-1">💰 Grana</div>
+                    <div className={`text-sm font-bold ${row.destaque ? 'text-emerald-700' : 'text-violet-700'}`}>✓ {row.grana}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold px-8 py-4 rounded-2xl hover:scale-[1.02] active:scale-95 transition shadow-[0_20px_60px_-12px_rgba(139,92,246,0.5)]"
+            >
+              Migrar da planilha em 5 minutos
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ TRUST / GARANTIA ============ */}
       <section className="bg-gradient-to-b from-violet-50/40 via-white to-white py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
-            <div className="inline-block px-3 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700 text-xs font-bold uppercase tracking-wider mb-3">
-              Quem usa, ama
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Sem risco
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-              MEIs como você,
+              Garantia honesta:
               <br/>
-              <span className="bg-gradient-to-r from-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-                dormindo mais tranquilos
+              <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                não gostou, devolvo
               </span>
             </h2>
+            <p className="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">
+              7 dias grátis pra testar tudo. Se virar Pro e em 30 dias não te mostrar
+              quanto você ganha de verdade, devolvo seu dinheiro. Sem perguntar.
+            </p>
           </div>
 
+          {/* 3 trust signals */}
           <div className="grid md:grid-cols-3 gap-5">
             {[
-              {nome: 'Camila R.', tipo: 'Nail designer', foto: '💅', texto: 'Eu não sabia se tava lucrando. Hoje sei exatamente quanto sobra. Comprei minha cadeira nova sem medo.'},
-              {nome: 'João P.', tipo: 'Motorista App', foto: '🚗', texto: 'Antes deixava DAS atrasar e pagava juros. Agora o app me avisa, eu pago no PIX em 30 segundos.'},
-              {nome: 'Marina S.', tipo: 'Designer freelancer', foto: '🎨', texto: 'A IA da nota é mágica. Tiro foto do cupom, ela classifica, eu confirmo. Fim. Não decoro categoria nenhuma.'},
-            ].map(d => (
-              <div key={d.nome} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-soft hover:shadow-xl transition">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-400 to-violet-500 flex items-center justify-center text-2xl">
-                    {d.foto}
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-gray-900">{d.nome}</div>
-                    <div className="text-xs text-gray-500">{d.tipo}</div>
-                  </div>
+              {
+                emoji: '🔒',
+                titulo: 'Dados criptografados',
+                desc: 'Senha em hash, banco com SSL, conexão HTTPS. Mesmo eu não vejo sua senha.',
+              },
+              {
+                emoji: '🇧🇷',
+                titulo: 'LGPD compliance',
+                desc: 'Termos claros, exporta tudo num clique, apaga sua conta quando quiser.',
+              },
+              {
+                emoji: '💳',
+                titulo: 'Pagamento seguro (Stripe)',
+                desc: 'Mesma plataforma que processa pagamento da Amazon, Shopify, Google.',
+              },
+            ].map(t => (
+              <div key={t.titulo} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-soft hover:shadow-xl transition text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center text-3xl">
+                  {t.emoji}
                 </div>
-                <div className="text-yellow-400 mb-2">★★★★★</div>
-                <p className="text-gray-700 leading-relaxed italic">"{d.texto}"</p>
+                <h3 className="font-extrabold text-gray-900 mb-2">{t.titulo}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{t.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Faixa honestidade */}
+          <div className="mt-10 rounded-3xl p-6 md:p-8 bg-gradient-to-br from-violet-50 to-fuchsia-50 border border-violet-100 text-center">
+            <p className="text-gray-700 leading-relaxed max-w-2xl mx-auto">
+              <span className="font-extrabold text-gray-900">Transparência total:</span>{' '}
+              o Grana acabou de lançar. Você é dos primeiros a usar. Por isso ainda não tenho
+              depoimentos pra mostrar — prefiro ser honesto a inventar. Quer fazer parte?
+            </p>
           </div>
         </div>
       </section>
@@ -669,10 +784,10 @@ export default async function HomePage() {
               <span>→</span>
             </Link>
             <Link
-              href="/demo"
+              href="/login"
               className="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/20 backdrop-blur-sm text-white font-semibold px-8 py-4 rounded-2xl hover:bg-white/10 transition"
             >
-              Ver demonstração
+              Já tenho conta
             </Link>
           </div>
         </div>
