@@ -6,17 +6,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String?  @unique
-  passwordHash  String?  // bcrypt-like hash; null pra contas demo/anonimas
-  name          String?
-  profissao     String?
+  id           String  @id @default(cuid())
+  email        String? @unique
+  passwordHash String? // bcrypt-like hash; null pra contas demo/anonimas
+  name         String?
+  profissao    String?
 
   regime        String?
   meiAtividade  String?
@@ -28,20 +28,20 @@ model User {
   contadorWhatsapp String?
   contadorEmail    String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
-  uploads      Upload[]
-  dasPayments  DASPayment[]
-  indicacoes   Indicacao[]
-  avaliacoes   Avaliacao[]
+  transactions        Transaction[]
+  uploads             Upload[]
+  dasPayments         DASPayment[]
+  indicacoes          Indicacao[]
+  avaliacoes          Avaliacao[]
   passwordResetTokens PasswordResetToken[]
-  reminderLogs ReminderLog[]
-  budgets      Budget[]
+  reminderLogs        ReminderLog[]
+  budgets             Budget[]
 
   // Preferencias de lembrete. Default: tudo ligado.
-  reminderDasEnabled       Boolean @default(true)
+  reminderDasEnabled        Boolean @default(true)
   reminderInactivityEnabled Boolean @default(true)
 
   /// Percentual sugerido pra separar do faturamento como reserva de imposto.
@@ -50,18 +50,18 @@ model User {
 
   /// Plano de billing. "free" (default) ou "pro". Quando "free" + trial
   /// ativo (trialEndsAt no futuro), o usuario tem acesso completo Pro.
-  plan          String    @default("free")
+  plan        String    @default("free")
   /// Fim do trial gratuito de Pro. Setado em createdAt+7d na criacao da conta.
   /// Quando NULL, sem trial (ja consumiu ou conta antiga sem migracao).
-  trialEndsAt   DateTime?
+  trialEndsAt DateTime?
 
   /// Stripe. customerId vincula a conta nossa ao Customer do Stripe. Setado
   /// na primeira sessao de checkout. subscriptionId guarda a assinatura ativa
   /// (atualizado via webhook). planUntil é a data de fim do periodo pago:
   /// quando expira sem renovar, volta pro free.
-  stripeCustomerId      String?  @unique
-  stripeSubscriptionId  String?
-  planUntil             DateTime?
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  planUntil            DateTime?
 
   /// Contador de lancamentos NOVOS (manuais) feitos no mes corrente.
   /// Importacoes do onboarding (imported=true) e tx automaticas (DAS)
@@ -72,10 +72,33 @@ model User {
   /// zera o contador e atualiza pra primeiro do mes atual.
   monthlyNewTxResetAt DateTime @default(now())
 
-  taxReserves TaxReserve[]
-  clientes    Cliente[]
-  recibos     Recibo[]
-  dasnRecibos DasnRecibo[]
+  /// Tour de boas-vindas no /app. NULL = nunca viu, mostra overlay na
+  /// proxima visita. Setado quando o usuario clica "Pronto" ou pula.
+  tourCompletedAt DateTime?
+
+  /// Programa de indicacao (member-get-member). Cada usuario tem um codigo
+  /// unico curto. Quem se cadastra via /signup?ref=CODIGO fica linkado em
+  /// referredById. Quando a indicada paga a primeira fatura, ambos ganham
+  /// 30 dias de Pro (somados ao planUntil/trialEndsAt). Marcado em
+  /// referralRewardedAt pra nao pagar 2x na mesma conversao.
+  referralCode       String?   @unique
+  referredById       String?
+  referredBy         User?     @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referralsMade      User[]    @relation("Referrals")
+  referralRewardedAt DateTime?
+  /// Contador de cliques no link de indicacao (rota /r/[code]). Util pra
+  /// medir o funil: cliques x signups x conversoes pagas.
+  referralClickCount Int       @default(0)
+  /// Origem registrada no signup via UTM. Preenchido automaticamente
+  /// quando alguem se cadastra via link de indicacao com ?utm_medium=...
+  /// Valores comuns: "share" (Web Share API), "copy" (botao de copiar),
+  /// "link" (acesso direto ao /r/CODE).
+  referralUtmMedium  String?
+
+  taxReserves       TaxReserve[]
+  clientes          Cliente[]
+  recibos           Recibo[]
+  dasnRecibos       DasnRecibo[]
   relatoriosMensais RelatorioMensal[]
 }
 
@@ -90,15 +113,15 @@ model User {
 ///  - auto=true marca depositos criados pelo botao "reservar agora" baseado
 ///    em receita do mes; auto=false eh entrada manual.
 model TaxReserve {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  year      Int
-  month     Int      // 1-12
-  amount    Float
-  note      String?
-  auto      Boolean  @default(false)
+  year   Int
+  month  Int // 1-12
+  amount Float
+  note   String?
+  auto   Boolean @default(false)
 
   createdAt DateTime @default(now())
 
@@ -119,16 +142,16 @@ model TaxReserve {
 ///  - Categoria eh string livre (nao FK) pra acompanhar as categorias
 ///    existentes em Transaction.category.
 model Budget {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  category        String
-  monthlyLimit    Float
-  alertThreshold  Int      @default(80)
+  category       String
+  monthlyLimit   Float
+  alertThreshold Int    @default(80)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, category])
   @@index([userId])
@@ -138,12 +161,12 @@ model Budget {
 /// Cada combinacao (userId + kind + reference) so dispara uma vez.
 /// reference e uma string canonizada — ex: "das:2026-07" ou "inactivity:2026-W25".
 model ReminderLog {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  kind      String   // "das_due" | "inactivity_week" | ...
-  reference String   // chave canonica do periodo, garante idempotencia
+  kind      String // "das_due" | "inactivity_week" | ...
+  reference String // chave canonica do periodo, garante idempotencia
   sentAt    DateTime @default(now())
 
   @@unique([userId, kind, reference])
@@ -151,55 +174,61 @@ model ReminderLog {
 }
 
 model PasswordResetToken {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash  String   @unique // sha256 do token cru, hex; nunca armazenamos o token em texto
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime @default(now())
-  requestIp  String?
-  userAgent  String?
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // sha256 do token cru, hex; nunca armazenamos o token em texto
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  requestIp String?
+  userAgent String?
 
   @@index([userId])
   @@index([expiresAt])
 }
 
 model Transaction {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date            DateTime
-  amount          Float
-  description     String
-  contraparte     String?
-  contraparteDoc  String?  // CPF/CNPJ apenas digitos, quando disponivel no extrato
+  date           DateTime
+  amount         Float
+  description    String
+  contraparte    String?
+  contraparteDoc String? // CPF/CNPJ apenas digitos, quando disponivel no extrato
 
-  type            String
-  category        String
-  isDeductible    Boolean  @default(false)
-  isPersonal      Boolean  @default(false)
-  isRecurring     Boolean  @default(false)
+  type         String
+  category     String
+  isDeductible Boolean @default(false)
+  isPersonal   Boolean @default(false)
+  isRecurring  Boolean @default(false)
 
-  source          String
-  uploadId        String?
-  upload          Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  source   String
+  uploadId String?
+  upload   Upload? @relation(fields: [uploadId], references: [id], onDelete: SetNull)
 
-  aiSuggested     Boolean  @default(false)
-  userConfirmed   Boolean  @default(false)
-  notes           String?
-  attachmentUrl   String?
-  notaNumero      String?  // numero da NF emitida pra esta receita
+  aiSuggested   Boolean @default(false)
+  userConfirmed Boolean @default(false)
+  notes         String?
+  attachmentUrl String?
+  notaNumero    String? // numero da NF emitida pra esta receita
 
   /// Marca que esta tx veio de importacao em massa (extrato OFX/CSV) ou
   /// foi gerada automaticamente pelo sistema (ex: lancamento de DAS pago).
   /// imported=true NAO consome cota mensal de lancamentos novos no plano
   /// Free. Lancamentos manuais ficam imported=false.
-  imported        Boolean  @default(false)
+  imported Boolean @default(false)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  /// Natureza da receita pra fins de DAS/DASN do MEI: "produto" (comercio +
+  /// industria, aliquota 1%) ou "servico" (aliquota 6%). Null = usa fallback
+  /// pelo `User.meiAtividade`. So faz sentido em type='income' de usuario MEI;
+  /// pra outros casos fica null e e ignorado.
+  natureza String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, date])
   @@index([userId, type])
@@ -207,9 +236,9 @@ model Transaction {
 }
 
 model Upload {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   fileName     String
   fileSize     Int
@@ -217,40 +246,40 @@ model Upload {
   status       String
   errorMsg     String?
   rawText      String?
-  txCount      Int      @default(0)
+  txCount      Int     @default(0)
 
   transactions Transaction[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DASPayment {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  month     Int
-  year      Int
-  value     Float
-  dueDate   DateTime
-  paidAt    DateTime?
-  proofUrl  String?
-  notes     String?
+  month    Int
+  year     Int
+  value    Float
+  dueDate  DateTime
+  paidAt   DateTime?
+  proofUrl String?
+  notes    String?
 
-  regime    String?
-  rbt12     Float?
-  aliquota  Float?
+  regime   String?
+  rbt12    Float?
+  aliquota Float?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, year, month])
   @@index([userId, dueDate])
 }
 
 model ContadorParceiro {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   nome          String
   foto          String?
   especialidade String?
@@ -258,36 +287,36 @@ model ContadorParceiro {
   whatsapp      String?
   email         String?
   preco         String?
-  ativo         Boolean  @default(true)
-  ordem         Int      @default(0)
-  bio           String?  // pequena descricao
+  ativo         Boolean @default(true)
+  ordem         Int     @default(0)
+  bio           String? // pequena descricao
 
   // Cache calculado da media e contagem (atualizado quando avaliacao e criada)
-  notaMedia     Float?
-  notaCount     Int      @default(0)
+  notaMedia Float?
+  notaCount Int    @default(0)
 
-  indicacoes    Indicacao[]
-  avaliacoes    Avaliacao[]
+  indicacoes Indicacao[]
+  avaliacoes Avaliacao[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Indicacao {
-  id          String           @id @default(cuid())
-  userId      String
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parceiroId  String
-  parceiro    ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parceiroId String
+  parceiro   ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
 
-  status      String           @default("enviada") // enviada | contato | fechou | desistiu
-  notes       String?
+  status String  @default("enviada") // enviada | contato | fechou | desistiu
+  notes  String?
 
   // Quando foi convertida em avaliacao (pra nao perguntar 2 vezes)
-  avaliadaEm  DateTime?
+  avaliadaEm DateTime?
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([parceiroId])
@@ -295,18 +324,18 @@ model Indicacao {
 }
 
 model Avaliacao {
-  id          String           @id @default(cuid())
-  userId      String
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parceiroId  String
-  parceiro    ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parceiroId String
+  parceiro   ContadorParceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
 
-  nota        Int              // 1 a 5
-  comentario  String?          // ate 200 chars
-  oculta      Boolean          @default(false) // pra moderacao
+  nota       Int // 1 a 5
+  comentario String? // ate 200 chars
+  oculta     Boolean @default(false) // pra moderacao
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, parceiroId])
   @@index([parceiroId])
@@ -316,22 +345,22 @@ model Avaliacao {
 // quantas chamadas de IA aconteceram, e quantas o usuario corrigiu depois.
 // Usado pra ajustar threshold da IA e melhorar heuristica com base em dados reais.
 model ClassificationMetric {
-  id            String   @id @default(cuid())
-  userId        String
-  uploadId      String?
+  id       String  @id @default(cuid())
+  userId   String
+  uploadId String?
 
   totalTxs      Int
-  fromHistory   Int      // camada 1: match historico/recorrencia/documento
-  fromHeuristic Int      // camada 2: regras de palavra-chave
-  fromAI        Int      // camada 3: Claude
+  fromHistory   Int // camada 1: match historico/recorrencia/documento
+  fromHeuristic Int // camada 2: regras de palavra-chave
+  fromAI        Int // camada 3: Claude
 
-  aiCallsCount  Int      @default(0) // quantas chamadas (batches) foram pra IA
-  aiTxsCount    Int      @default(0) // total de txs enviadas pra IA
+  aiCallsCount Int @default(0) // quantas chamadas (batches) foram pra IA
+  aiTxsCount   Int @default(0) // total de txs enviadas pra IA
 
-  correctedTxs  Int      @default(0) // quantas o usuario alterou depois
-  correctedAt   DateTime?
+  correctedTxs Int       @default(0) // quantas o usuario alterou depois
+  correctedAt  DateTime?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([uploadId])
@@ -341,28 +370,28 @@ model ClassificationMetric {
 // que veio da IA, gravamos o par (sugestao IA -> correcao usuario). Esses pares
 // alimentam o prompt da IA em uploads futuros, evitando repetir o mesmo erro.
 model ClassificationCorrection {
-  id              String   @id @default(cuid())
-  userId          String
+  id     String @id @default(cuid())
+  userId String
 
   // contexto da transacao (snapshot na hora da correcao)
-  description     String
-  contraparte     String?
-  contraparteDoc  String?
-  amount          Float
+  description    String
+  contraparte    String?
+  contraparteDoc String?
+  amount         Float
 
   // o que a IA havia sugerido
-  aiType          String
-  aiCategory      String
-  aiIsDeductible  Boolean
-  aiIsPersonal    Boolean
+  aiType         String
+  aiCategory     String
+  aiIsDeductible Boolean
+  aiIsPersonal   Boolean
 
   // o que o usuario corrigiu pra
-  userType        String
-  userCategory    String
+  userType         String
+  userCategory     String
   userIsDeductible Boolean
-  userIsPersonal  Boolean
+  userIsPersonal   Boolean
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([userId, contraparteDoc])
@@ -378,21 +407,21 @@ model ClassificationCorrection {
 ///  - Indice unique (userId, doc) impede duplicar o mesmo cliente, MAS doc
 ///    e opcional (clientes informais entram so com nome).
 model Cliente {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  nome      String
-  doc       String?  // CPF/CNPJ apenas digitos
-  whatsapp  String?
-  email     String?
-  endereco  String?
-  notes     String?
+  nome     String
+  doc      String? // CPF/CNPJ apenas digitos
+  whatsapp String?
+  email    String?
+  endereco String?
+  notes    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  recibos   Recibo[]
+  recibos Recibo[]
 
   @@index([userId, nome])
   @@index([userId, doc])
@@ -403,28 +432,28 @@ model Cliente {
 /// futura. O numero e sequencial por user (1, 2, 3, ...) — nao tem validade
 /// fiscal, e so pra organizacao.
 model Recibo {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   clienteId String?
   cliente   Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
 
-  numero    Int      // sequencial por user
+  numero    Int // sequencial por user
   data      DateTime
   valor     Float
   descricao String
 
   // Snapshot dos dados na hora da emissao, pra recibo continuar igual mesmo
   // se o cliente for editado/deletado depois.
-  clienteNome     String
-  clienteDoc      String?
-  clienteContato  String?  // whatsapp ou email usado no envio
+  clienteNome    String
+  clienteDoc     String?
+  clienteContato String? // whatsapp ou email usado no envio
 
   createdAt DateTime @default(now())
 
-  @@index([userId, data])
   @@unique([userId, numero])
+  @@index([userId, data])
 }
 
 /// Historico de DASN-SIMEI entregue por ano. O MEI marca como entregue
@@ -432,20 +461,20 @@ model Recibo {
 /// recibo. Util pra provar a entrega depois — Receita mantem por anos
 /// mas e mais facil ter copia local.
 model DasnRecibo {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  year            Int      // ano-base declarado
+  year            Int // ano-base declarado
   deliveredAt     DateTime // quando declarou no portal
-  valorDeclarado  Float    // receita bruta total que foi declarada
+  valorDeclarado  Float // receita bruta total que foi declarada
   receitaComercio Float    @default(0)
   receitaServicos Float    @default(0)
 
   // Path no Supabase Storage. URL assinada e gerada na hora pra exibir.
-  pdfPath         String?
+  pdfPath String?
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, year])
   @@index([userId])
@@ -458,26 +487,49 @@ model DasnRecibo {
 /// Snapshot dos numeros principais ficam no banco — assim a lista pode
 /// mostrar receita/despesa/lucro sem precisar abrir o PDF.
 model RelatorioMensal {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  year        Int
-  month       Int      // 1-12
+  year  Int
+  month Int // 1-12
 
   // Snapshots
-  receita     Float    @default(0)
-  despesas    Float    @default(0)
-  lucro       Float    @default(0)
-  txCount     Int      @default(0)
+  receita  Float @default(0)
+  despesas Float @default(0)
+  lucro    Float @default(0)
+  txCount  Int   @default(0)
 
   // Path no Supabase Storage. Se null, regerou e nao subiu (ou storage off).
-  pdfPath     String?
+  pdfPath String?
 
   // Origem da geracao
-  geradoAuto  Boolean  @default(false)
-  geradoEm    DateTime @default(now())
+  geradoAuto Boolean  @default(false)
+  geradoEm   DateTime @default(now())
 
   @@unique([userId, year, month])
   @@index([userId, year, month])
+}
+
+/// Lead capturado na landing antes do signup. Usado pra:
+///  - Lista de espera ("avisa quando lançar")
+///  - Lista pra acionar Founder (50% off vitalício, primeiros 100)
+///  - Remarketing por email/WhatsApp
+///
+/// Quando a pessoa se cadastra de verdade (User), ligamos via email.
+model Lead {
+  id        String   @id @default(cuid())
+  email     String?
+  whatsapp  String?
+  profissao String?
+  source    String? // "landing-hero", "landing-pricing", "footer", "post-grupo-X"
+  utm       String? // querystring do utm pra rastrear campanha
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Quando email/whatsapp já existe, atualizamos o registro existente
+  // ao invés de criar duplicado. Index pra busca.
+  @@index([email])
+  @@index([whatsapp])
+  @@index([createdAt])
 }

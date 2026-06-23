@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import StickyCTA from '@/components/StickyCTA';
+import BetaVagasBanner from '@/components/BetaVagasBanner';
+import LeadCapture from '@/components/LeadCapture';
 
 export const dynamic = 'force-dynamic';
 
@@ -256,6 +258,105 @@ export default async function HomePage() {
             <div className="absolute -top-4 -right-4 md:-right-12 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/40 rotate-3">
               ao vivo
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ COMO FUNCIONA EM 3 PASSOS ============ */}
+      <section className="relative bg-white py-20 md:py-28 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center mb-14">
+            <div className="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Tão fácil que dói
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              Em 3 passos você está
+              <br />
+              <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                no controle da grana
+              </span>
+            </h2>
+            <p className="mt-4 text-gray-600 md:text-lg max-w-2xl mx-auto">
+              Sem planilha, sem categoria difícil, sem aula de contabilidade.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8 relative">
+            {/* Linha conectando os passos no desktop */}
+            <div className="hidden md:block absolute top-16 left-[16.66%] right-[16.66%] h-px bg-gradient-to-r from-violet-200 via-fuchsia-200 to-violet-200" />
+
+            {/* Passo 1 */}
+            <div className="relative bg-white rounded-3xl p-7 border border-gray-200 shadow-soft hover:shadow-glow-cool transition">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white font-black text-lg flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(168,85,247,0.6)]">
+                  1
+                </div>
+                <div className="text-3xl">📸</div>
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+                Tira foto da nota
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Recebeu um Pix? Comprou material? Aponta a câmera, a IA lê o valor,
+                a data e categoriza sozinha. Leva 3 segundos.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full">
+                ⚡ Sem digitar nada
+              </div>
+            </div>
+
+            {/* Passo 2 */}
+            <div className="relative bg-white rounded-3xl p-7 border border-gray-200 shadow-soft hover:shadow-glow-cool transition">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white font-black text-lg flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(236,72,153,0.6)]">
+                  2
+                </div>
+                <div className="text-3xl">📊</div>
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+                Vê quanto sobra de verdade
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Dashboard mostra entrada, saída e o que pode tirar do caixa sem
+                quebrar. Reserva pro DAS é separada automaticamente.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-fuchsia-700 bg-fuchsia-50 px-2.5 py-1 rounded-full">
+                💰 Sem surpresa no fim do mês
+              </div>
+            </div>
+
+            {/* Passo 3 */}
+            <div className="relative bg-white rounded-3xl p-7 border border-gray-200 shadow-soft hover:shadow-glow-cool transition">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-violet-500 text-white font-black text-lg flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(14,165,233,0.6)]">
+                  3
+                </div>
+                <div className="text-3xl">🧾</div>
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+                Manda recibo e fica em paz
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Cliente pediu nota? Gera recibo PDF em 2 toques. DAS do MEI tem
+                lembrete automático. Fim das corridas no dia 20.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-700 bg-cyan-50 px-2.5 py-1 rounded-full">
+                🛡️ Sem dor de cabeça
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-extrabold px-7 py-4 rounded-full shadow-[0_12px_32px_-8px_rgba(168,85,247,0.6)] transition active:scale-95"
+            >
+              Começar grátis em 1 minuto
+              <span className="text-xl">→</span>
+            </Link>
+            <p className="mt-3 text-xs text-gray-500">
+              7 dias de Pro grátis · sem cartão · cancela quando quiser
+            </p>
           </div>
         </div>
       </section>
@@ -712,6 +813,10 @@ export default async function HomePage() {
             <p className="text-gray-600 text-lg">Comece com 7 dias de Pro grátis pra testar tudo. Sem cartão.</p>
           </div>
 
+          <div className="max-w-md mx-auto mb-8">
+            <BetaVagasBanner />
+          </div>
+
           <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* Free */}
             <div className="bg-white rounded-3xl p-7 border-2 border-gray-200">
@@ -782,7 +887,7 @@ export default async function HomePage() {
       </section>
 
       {/* ============ FAQ ============ */}
-      <section className="bg-gradient-to-b from-white to-violet-50/30 py-20 md:py-28">
+      <section id="faq" className="bg-gradient-to-b from-white to-violet-50/30 py-20 md:py-28">
         <div className="max-w-3xl mx-auto px-5">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
@@ -799,9 +904,14 @@ export default async function HomePage() {
               {q: 'Como funciona o teste grátis?', a: 'Você cria conta e ganha 7 dias de Pro grátis pra testar tudo — sem precisar de cartão. Pode importar seu extrato inteiro (sem limite no onboarding), tirar foto de nota com IA, gerar recibo, ver dashboard completo. No 8º dia, se quiser continuar, é R$ 17,90/mês. Se não, vira Free com até 20 lançamentos novos por mês — e o histórico que você importou continua todo lá.'},
               {q: 'Preciso entender de contabilidade?', a: 'Não. O app fala em português de gente. "Sobrou pra você", "vai pagar imposto", "tá tranquilo no limite MEI". Sem termo técnico.'},
               {q: 'Substitui meu contador?', a: 'Pra MEI, sim. A DASN-SIMEI a gente entrega prontinha pra você colar no portal. Se você vira ME (Simples), aí vale ter contador.'},
+              {q: 'E se eu passar do limite de R$ 81.000?', a: 'O app avisa antes. Quando você bate 80% do teto, chega aviso pelo dashboard e por email. Se passar mas ficar até 20% acima (R$ 97.200), você só paga DAS extra sobre o excedente. Se passar dos 20%, vira desenquadre retroativo — a gente mostra o cálculo e sugere procurar contador pra migrar pra ME.'},
+              {q: 'E se eu já tô atrasado com DAS ou DASN?', a: 'Sem drama. Você pode lançar tudo retroativo no Grana, marcar o que já pagou, e ver o que falta. Pra DAS atrasado a gente mostra o valor com multa e juros atualizados. Pra DASN, é só copiar os dois números prontos e colar no portal — multa por atraso é R$ 50 fixo.'},
               {q: 'E se eu não for MEI ainda?', a: 'Você pode começar mesmo assim. Mas o app é otimizado pra MEI — alertas, limites e reservas são pensados pra esse regime.'},
-              {q: 'Meus dados ficam seguros?', a: 'Sim. Senha criptografada, banco com SSL, e a gente nunca compartilha nada com terceiros. Pode exportar e apagar tudo quando quiser.'},
-              {q: 'Como cancelo?', a: 'Em 1 clique nas configurações. Sem ligação, sem retenção, sem chato.'},
+              {q: 'Vocês têm acesso ao meu banco?', a: 'Não. Nada de Open Finance, nada de senha de banco. Você importa o extrato manualmente (OFX, CSV) ou lança transação direto no app. O Grana nunca vê suas credenciais bancárias.'},
+              {q: 'Funciona em qualquer celular?', a: 'Sim. É um web app que abre no navegador (Chrome, Safari, Firefox) e dá pra instalar como atalho na tela inicial — fica igual a um app nativo. Sem ocupar espaço da Play Store ou App Store.'},
+              {q: 'Meus dados ficam seguros?', a: 'Sim. Senha criptografada, banco com SSL, backup diário. A gente nunca compartilha nada com terceiros. Pode exportar tudo em CSV ou apagar a conta inteira quando quiser.'},
+              {q: 'Tem suporte humano?', a: 'Sim, WhatsApp direto. O botão fica flutuando no canto da tela quando você está logado. Resposta em até 24h em dia útil — beta fechado tem fila preferencial.'},
+              {q: 'Como cancelo?', a: 'Em 1 clique nas configurações. Sem ligação, sem retenção, sem chato. Cancelou agora, fica Pro até o fim do ciclo já pago, depois vira Free.'},
             ].map((f, i) => (
               <details key={i} className="group bg-white rounded-2xl border border-gray-100 hover:border-violet-200 transition overflow-hidden">
                 <summary className="flex justify-between items-center p-5 cursor-pointer list-none">
@@ -812,6 +922,18 @@ export default async function HomePage() {
               </details>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ============ LISTA DE ESPERA (entre FAQ e CTA final) ============ */}
+      <section className="bg-white py-16 md:py-20 border-t border-gray-100">
+        <div className="max-w-md mx-auto px-5">
+          <LeadCapture
+            source="landing-bottom"
+            title="Não quer começar agora?"
+            subtitle="Deixa seu contato e a gente avisa quando abrir mais vagas Beta."
+            ctaLabel="Entrar na lista de espera"
+          />
         </div>
       </section>
 

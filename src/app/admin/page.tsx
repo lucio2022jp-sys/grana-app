@@ -5,5 +5,5 @@ export default function AdminPage() {
   if (!isAdminServerComponent()) {
     redirect('/admin/login');
   }
-  redirect('/admin/parceiros');
+  redirect('/admin/funil');
 }

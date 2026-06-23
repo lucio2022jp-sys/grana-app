@@ -16,6 +16,7 @@ type Tx = {
   userConfirmed: boolean;
   hasAttachment: boolean;
   notaNumero: string | null;
+  natureza: 'produto' | 'servico' | null;
 };
 
 const ALL_CATEGORIES = [
@@ -48,6 +49,7 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
   const [isDeductible, setIsDeductible] = useState(tx.isDeductible);
   const [isPersonal, setIsPersonal] = useState(tx.isPersonal);
   const [notaNumero, setNotaNumero] = useState(tx.notaNumero ?? '');
+  const [natureza, setNatureza] = useState<'produto' | 'servico' | null>(tx.natureza ?? null);
   const [saving, setSaving] = useState(false);
 
   const [hasAttachment, setHasAttachment] = useState(tx.hasAttachment);
@@ -141,6 +143,9 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
         isDeductible,
         isPersonal,
         notaNumero: type === 'receita' ? (notaNumero.trim() || null) : null,
+        // Natureza so faz sentido em receita; em outros tipos zeramos
+        // pra nao deixar valor antigo "preso" se o usuario mudou o tipo.
+        natureza: type === 'receita' ? natureza : null,
       }),
     });
     router.push('/app/transacoes');
@@ -250,6 +255,44 @@ export default function EditTxClient({ tx }: { tx: Tx }) {
               className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-xl px-4 py-3 transition"
             />
           </label>
+        )}
+
+        {/* Natureza da venda — so receita; ajuda na divisao do DASN */}
+        {type === 'receita' && (
+          <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-soft">
+            <div className="text-sm font-semibold text-gray-800 mb-1">
+              📦 Tipo da venda <span className="font-normal text-gray-400">(opcional)</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-3">
+              Separa comercio/industria de servico no DASN. Em branco = usa sua atividade declarada.
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setNatureza(natureza === 'produto' ? null : 'produto')}
+                className={`py-3 px-4 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 ${
+                  natureza === 'produto'
+                    ? 'bg-secondary-100 border-2 border-secondary-500 text-secondary-700'
+                    : 'bg-white border-2 border-gray-200 text-gray-700'
+                }`}
+              >
+                <span>📦</span>
+                <span>Produto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNatureza(natureza === 'servico' ? null : 'servico')}
+                className={`py-3 px-4 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 ${
+                  natureza === 'servico'
+                    ? 'bg-secondary-100 border-2 border-secondary-500 text-secondary-700'
+                    : 'bg-white border-2 border-gray-200 text-gray-700'
+                }`}
+              >
+                <span>🛠️</span>
+                <span>Servico</span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Comprovante (foto ou PDF) */}

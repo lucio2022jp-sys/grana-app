@@ -13,8 +13,10 @@
 import { NextResponse } from 'next/server';
 import {
   runDasDueReminders,
+  runDasnReminders,
   runInactivityReminders,
   runMeiCapReminders,
+  runTrialReminders,
 } from '@/lib/reminders';
 
 export const runtime = 'nodejs';
@@ -34,6 +36,8 @@ async function run() {
     runDasDueReminders(),
     runInactivityReminders(),
     runMeiCapReminders(),
+    runTrialReminders(),
+    runDasnReminders(),
   ]);
   return results.map((r) =>
     r.status === 'fulfilled'

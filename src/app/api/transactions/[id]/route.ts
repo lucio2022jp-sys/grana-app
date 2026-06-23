@@ -12,6 +12,8 @@ const updateSchema = z.object({
   isPersonal: z.boolean().optional(),
   notes: z.string().optional(),
   notaNumero: z.string().nullable().optional(),
+  // null/'' = volta pro fallback automatico (atividade declarada do MEI).
+  natureza: z.enum(['produto', 'servico']).nullable().optional(),
 });
 
 export async function PATCH(

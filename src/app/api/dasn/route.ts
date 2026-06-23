@@ -4,18 +4,20 @@
  * vs servicos.
  *
  * Como dividir comercio vs servico:
- *  - Como o app nao categoriza receita por tipo de atividade (so o tipo
- *    da atividade do MEI fica salvo em `meiAtividade`), a logica aqui usa
- *    a atividade declarada como referencia:
+ *  - Quando a transacao tem `natureza` preenchida (toggle no form),
+ *    respeitamos a classificacao manual: 'produto' -> comercio, 'servico'
+ *    -> servicos. E o caminho preferido e mais preciso.
+ *  - Quando `natureza` e null, caimos no fallback automatico pela atividade
+ *    declarada do MEI (`meiAtividade`):
  *    - comercio          -> tudo entra como comercio
- *    - industria         -> tudo entra como comercio (no DASN industria
- *                           vai junto com comercio mesmo)
+ *    - industria         -> tudo entra como comercio (industria + comercio
+ *                           ficam juntos no DASN)
  *    - servicos          -> tudo entra como servico
- *    - comercio_servicos -> 50/50 como sugestao inicial. Usuario ajusta
- *                           manualmente se quiser.
+ *    - comercio_servicos -> 50/50 como sugestao inicial
  *
- *  - Em V2, podemos categorizar receita por categoria tambem (cliente vs
- *    venda) pra inferir melhor.
+ *  Quando o usuario classifica parcialmente (algumas tx com natureza,
+ *  outras sem), aplicamos cada regra na sua porcao: o classificado vai
+ *  direto, o nao classificado segue o fallback da atividade.
  *
  * GET /api/dasn?year=2025
  *   Default year = ano anterior (que e o que o MEI declara em 2026).
@@ -49,47 +51,72 @@ export async function GET(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'User nao encontrado' }, { status: 404 });
 
-  // Pega receita do ano todo
-  const receitas = await prisma.transaction.aggregate({
+  // Pega receita do ano todo. Carregamos amount+natureza por tx pra poder
+  // separar produto/servico no nivel do registro.
+  const txs = await prisma.transaction.findMany({
     where: {
       userId: uid,
       type: 'receita',
       date: { gte: yearStart, lt: yearEnd },
     },
-    _sum: { amount: true },
-    _count: true,
+    select: { amount: true, natureza: true },
   });
 
-  const receitaBruta = Math.max(0, receitas._sum.amount ?? 0);
-  const transacoesCount = receitas._count;
+  const receitaBruta = Math.max(
+    0,
+    txs.reduce((sum, t) => sum + t.amount, 0),
+  );
+  const transacoesCount = txs.length;
 
-  // Divide comercio vs servico baseado na atividade
+  // Receita ja classificada manualmente pelo usuario (toggle).
+  const receitaProdutoManual = txs
+    .filter((t) => t.natureza === 'produto')
+    .reduce((s, t) => s + t.amount, 0);
+  const receitaServicoManual = txs
+    .filter((t) => t.natureza === 'servico')
+    .reduce((s, t) => s + t.amount, 0);
+  const receitaSemClassificacao = txs
+    .filter((t) => t.natureza !== 'produto' && t.natureza !== 'servico')
+    .reduce((s, t) => s + t.amount, 0);
+
+  // Aplica fallback pela atividade so na parcela sem classificacao manual.
   const atividade = user.meiAtividade ?? 'servicos';
-  let receitaComercio = 0;
-  let receitaServicos = 0;
-  let divisaoNota: string | null = null;
+  let comercioFallback = 0;
+  let servicosFallback = 0;
+  let fallbackNota: string | null = null;
 
   switch (atividade) {
     case 'comercio':
     case 'industria':
-      receitaComercio = receitaBruta;
-      receitaServicos = 0;
-      divisaoNota = `Sua atividade declarada e ${atividade}, entao toda receita conta como comercio/industria.`;
+      comercioFallback = receitaSemClassificacao;
+      fallbackNota = `Receitas sem categoria foram contadas como comercio/industria (sua atividade declarada e ${atividade}).`;
       break;
     case 'servicos':
-      receitaComercio = 0;
-      receitaServicos = receitaBruta;
-      divisaoNota = 'Sua atividade declarada e servicos, entao toda receita conta como prestacao de servico.';
+      servicosFallback = receitaSemClassificacao;
+      fallbackNota = 'Receitas sem categoria foram contadas como servico (sua atividade declarada).';
       break;
     case 'comercio_servicos':
-      // 50/50 como ponto de partida — usuaria ajusta
-      receitaComercio = receitaBruta / 2;
-      receitaServicos = receitaBruta / 2;
-      divisaoNota = 'Sua atividade declarada e mista (comercio + servicos). Sugerimos 50/50, mas voce deve ajustar pelos seus numeros reais.';
+      comercioFallback = receitaSemClassificacao / 2;
+      servicosFallback = receitaSemClassificacao / 2;
+      fallbackNota = 'Receitas sem categoria foram divididas 50/50 (atividade mista). Marque produto/servico em cada lancamento pra ficar exato.';
       break;
     default:
-      receitaServicos = receitaBruta;
-      divisaoNota = 'Atividade nao definida — assumindo servicos. Cadastre sua atividade no perfil pra dividir corretamente.';
+      servicosFallback = receitaSemClassificacao;
+      fallbackNota = 'Atividade nao definida — receitas sem categoria foram contadas como servico. Cadastre sua atividade no perfil.';
+  }
+
+  const receitaComercio = receitaProdutoManual + comercioFallback;
+  const receitaServicos = receitaServicoManual + servicosFallback;
+
+  // Texto da nota: prioriza dizer o que o usuario classificou direto.
+  let divisaoNota: string | null = null;
+  const totalManual = receitaProdutoManual + receitaServicoManual;
+  if (totalManual > 0 && receitaSemClassificacao === 0) {
+    divisaoNota = 'Divisao baseada na natureza (produto/servico) marcada em cada lancamento.';
+  } else if (totalManual > 0 && receitaSemClassificacao > 0) {
+    divisaoNota = `Parte das receitas (${formatBRL(totalManual)}) foi classificada manualmente; o restante seguiu o fallback da sua atividade. ${fallbackNota}`;
+  } else {
+    divisaoNota = fallbackNota;
   }
 
   // Status: se passou do teto, o MEI vai precisar avisar a Receita E pode
@@ -108,6 +135,13 @@ export async function GET(req: NextRequest) {
     ? Math.ceil((periodoFim.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
+  // Ja entregou? Se ja tem recibo do ano-base, o banner some no dashboard.
+  const reciboExistente = await prisma.dasnRecibo.findFirst({
+    where: { userId: uid, year },
+    select: { id: true },
+  });
+  const jaDeclarado = !!reciboExistente;
+
   return NextResponse.json({
     year,
     user: {
@@ -118,6 +152,9 @@ export async function GET(req: NextRequest) {
     receitaBruta,
     receitaComercio,
     receitaServicos,
+    receitaProdutoManual,
+    receitaServicoManual,
+    receitaSemClassificacao,
     divisaoNota,
     transacoesCount,
     meiLimit: MEI_LIMIT,
@@ -126,8 +163,13 @@ export async function GET(req: NextRequest) {
     aberto,
     dentroDoPeriodo,
     diasRestantes,
+    jaDeclarado,
     periodoInicio: periodoInicio.toISOString(),
     periodoFim: periodoFim.toISOString(),
     portalUrl: 'https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/dasnsimei.app/Identificacao',
   });
+}
+
+function formatBRL(v: number): string {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }

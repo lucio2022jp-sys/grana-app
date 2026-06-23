@@ -137,3 +137,108 @@ export function calcularDASMensal(opts: {
     regime: 'mei',
   };
 }
+
+/**
+ * DAS de excedente do MEI.
+ *
+ * Quando o MEI passa de R$ 81.000 no ano, paga DAS extra sobre o excedente
+ * conforme as regras do Simples Nacional. Sao dois cenarios:
+ *
+ *  1) Faturamento entre R$ 81.000 e R$ 97.200 (zona de tolerancia 20%):
+ *     Mantem o MEI ate o fim do ano e paga **so sobre o que passou de
+ *     R$ 81k**, com aliquota da primeira faixa do Simples segundo a
+ *     atividade (Anexo I pra comercio/industria, Anexo III pra servicos).
+ *
+ *  2) Faturamento acima de R$ 97.200 (passou da tolerancia):
+ *     Desenquadre retroativo. Paga DAS do Simples sobre **TODA receita do
+ *     ano desde janeiro** (nao so o excedente). E o cenario que machuca
+ *     financeiramente — alertar bem o usuario.
+ *
+ * Tudo isso e estimativa pra dar ao MEI uma nocao da conta. O valor
+ * exato sai do PGDAS-D quando ele migrar.
+ */
+export type DASExcedente = {
+  /** Cenario aplicavel ao faturamento informado. */
+  cenario: 'sem_excedente' | 'tolerancia' | 'desenquadre_retroativo';
+  /** Valor base sobre o qual a aliquota do Simples incidiu. */
+  baseCalculo: number;
+  /** Aliquota efetiva aplicada (decimal, ex: 0.04 = 4%). */
+  aliquota: number;
+  /** Anexo do Simples usado pra calcular. */
+  anexo: SimplesAnexo;
+  /** Valor estimado do DAS extra a pagar. */
+  valorExtra: number;
+  /** Texto curto explicando o cenario. */
+  explicacao: string;
+};
+
+/** Mapeia a atividade do MEI pro anexo do Simples correspondente. */
+function anexoSimplesPorAtividade(atividade?: string | null): SimplesAnexo {
+  switch (atividade) {
+    case 'comercio':
+    case 'industria':
+    case 'comercio_servicos':
+      // Comercio/industria caem no Anexo I. Comercio+servicos predomina
+      // a parte comercial pra fim de aliquota base do excedente.
+      return 'I';
+    case 'servicos':
+    default:
+      return 'III';
+  }
+}
+
+export function calcularDASExcedente(opts: {
+  yearReceita: number;
+  meiAtividade?: string | null;
+}): DASExcedente {
+  const { yearReceita } = opts;
+  const anexo = anexoSimplesPorAtividade(opts.meiAtividade);
+
+  // Limites importados do simples.ts
+  const TETO = 81_000;
+  const TETO_TOLERANCIA = 97_200;
+
+  if (yearReceita <= TETO) {
+    return {
+      cenario: 'sem_excedente',
+      baseCalculo: 0,
+      aliquota: 0,
+      anexo,
+      valorExtra: 0,
+      explicacao: 'Faturamento dentro do teto MEI.',
+    };
+  }
+
+  if (yearReceita <= TETO_TOLERANCIA) {
+    // Cenario 1: paga so sobre o excedente, primeira faixa do Simples.
+    const base = yearReceita - TETO;
+    const calc = calcularDASSimples(base, yearReceita, anexo);
+    return {
+      cenario: 'tolerancia',
+      baseCalculo: base,
+      aliquota: calc.aliquota,
+      anexo,
+      valorExtra: calc.das,
+      explicacao:
+        `Voce passou do teto MEI mas ainda esta na zona de tolerancia 20%. ` +
+        `Vai pagar DAS extra sobre os R$ ${base.toFixed(2)} que excederam ` +
+        `R$ 81.000, com aliquota do Simples (Anexo ${anexo}).`,
+    };
+  }
+
+  // Cenario 2: desenquadre retroativo. Paga sobre toda a receita do ano.
+  const base = yearReceita;
+  const calc = calcularDASSimples(base, yearReceita, anexo);
+  return {
+    cenario: 'desenquadre_retroativo',
+    baseCalculo: base,
+    aliquota: calc.aliquota,
+    anexo,
+    valorExtra: calc.das,
+    explicacao:
+      `Voce passou da zona de tolerancia (R$ 97.200). Desenquadre ` +
+      `retroativo: o Simples cobra DAS sobre TODA a receita do ano ` +
+      `(R$ ${base.toFixed(2)}), nao so o excedente. Procure um contador ` +
+      `pra fazer a migracao com calma.`,
+  };
+}

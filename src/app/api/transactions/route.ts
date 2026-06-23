@@ -19,6 +19,10 @@ const createSchema = z.object({
   category: z.string(),
   isDeductible: z.boolean().optional(),
   isPersonal: z.boolean().optional(),
+  // Receita do MEI: classificacao manual entre comercio/industria (1%) e
+  // servico (6%). Quando ausente, o calculo de DAS/DASN cai no default da
+  // atividade declarada (User.meiAtividade).
+  natureza: z.enum(['produto', 'servico']).nullish(),
 });
 
 export async function GET(req: NextRequest) {
@@ -97,6 +101,12 @@ export async function POST(req: NextRequest) {
         category: data.category,
         isDeductible: data.isDeductible ?? false,
         isPersonal: data.isPersonal ?? false,
+        // Salva natureza so quando faz sentido: receita de MEI, nao-pessoal.
+        // Em outros casos fica null e o calculo de DAS/DASN ignora o campo.
+        natureza:
+          data.type === 'receita' && !data.isPersonal && data.natureza
+            ? data.natureza
+            : null,
         source: 'manual',
         userConfirmed: true,
         imported: false,

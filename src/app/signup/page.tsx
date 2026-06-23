@@ -1,16 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SignupPage() {
+function SignupInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [ref, setRef] = useState<string | null>(null);
+  const [utmMedium, setUtmMedium] = useState<string | null>(null);
+
+  useEffect(() => {
+    const r = searchParams.get('ref');
+    if (r) setRef(r.trim().toUpperCase().slice(0, 16));
+    const um = searchParams.get('utm_medium');
+    if (um) setUtmMedium(um.trim().slice(0, 32));
+  }, [searchParams]);
 
   async function cadastrar(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +30,13 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          ref: ref ?? undefined,
+          utmMedium: utmMedium ?? undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -43,6 +59,11 @@ export default function SignupPage() {
           Criar conta gratis
         </h1>
         <p className="text-gray-600 text-sm">Leva uns 30 segundos. Nao pedimos cartao.</p>
+        {ref && (
+          <div className="mt-4 inline-flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full px-4 py-2 text-xs font-semibold text-purple-700">
+            🎁 Voce foi indicada — ganha 30 dias Pro quando assinar
+          </div>
+        )}
       </div>
 
       <form onSubmit={cadastrar} className="space-y-4">
@@ -110,5 +131,13 @@ export default function SignupPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupInner />
+    </Suspense>
   );
 }

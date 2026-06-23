@@ -45,6 +45,10 @@ export default function NovaTransacao() {
   const [contraparte, setContraparte] = useState('');
   const [categoria, setCategoria] = useState('cliente');
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
+  // Natureza da receita: 'produto' (comercio/industria, 1% no DAS) ou
+  // 'servico' (6% no DAS). So aparece pro tipo 'receita'. null = deixar o
+  // calculo do DASN cair no fallback da atividade declarada do MEI.
+  const [natureza, setNatureza] = useState<'produto' | 'servico' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +95,7 @@ export default function NovaTransacao() {
           category: cat,
           isDeductible,
           isPersonal,
+          natureza: tipo === 'receita' ? natureza : null,
         }),
       });
 
@@ -118,6 +123,8 @@ export default function NovaTransacao() {
     else if (novo === 'despesa') setCategoria('produto');
     else if (novo === 'pessoal') setCategoria('alimentacao');
     else setCategoria(novo);
+    // Saiu de receita? Limpa natureza pra nao salvar valor errado depois.
+    if (novo !== 'receita') setNatureza(null);
   }
 
   const categorias =
@@ -247,6 +254,45 @@ export default function NovaTransacao() {
           className="w-full bg-white border-2 border-gray-200 focus:border-secondary-400 outline-none rounded-2xl px-5 py-4 shadow-soft transition"
         />
       </label>
+
+      {/* Natureza da receita: opcional, melhora a divisao no DASN */}
+      {tipo === 'receita' && (
+        <div className="block mb-4">
+          <span className="block text-sm font-semibold text-gray-700 mb-2">
+            Tipo da venda <span className="font-normal text-gray-400">(opcional)</span>
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setNatureza(natureza === 'produto' ? null : 'produto')}
+              className={`py-3 px-4 rounded-2xl text-sm font-medium transition flex items-center gap-2 ${
+                natureza === 'produto'
+                  ? 'bg-secondary-100 border-2 border-secondary-500 text-secondary-700'
+                  : 'bg-white border-2 border-gray-200 text-gray-700'
+              }`}
+            >
+              <span className="text-xl">📦</span>
+              <span className="truncate">Produto</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNatureza(natureza === 'servico' ? null : 'servico')}
+              className={`py-3 px-4 rounded-2xl text-sm font-medium transition flex items-center gap-2 ${
+                natureza === 'servico'
+                  ? 'bg-secondary-100 border-2 border-secondary-500 text-secondary-700'
+                  : 'bg-white border-2 border-gray-200 text-gray-700'
+              }`}
+            >
+              <span className="text-xl">🛠️</span>
+              <span className="truncate">Servico</span>
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Ajuda a separar comercio/industria de servico no DASN. Se deixar
+            em branco, a gente usa sua atividade declarada.
+          </p>
+        </div>
+      )}
 
       {/* Categoria so pra despesa e pessoal */}
       {(tipo === 'despesa' || tipo === 'pessoal') && (

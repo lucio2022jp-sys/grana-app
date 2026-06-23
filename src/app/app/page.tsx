@@ -27,6 +27,22 @@ type Dashboard = {
     percentTolerancia: number;
     status: 'tranquilo' | 'atento' | 'risco' | 'estourado' | 'desenquadre';
     mensagem: string;
+    dasExcedente?: {
+      cenario: 'sem_excedente' | 'tolerancia' | 'desenquadre_retroativo';
+      baseCalculo: number;
+      aliquota: number;
+      anexo: string;
+      valorExtra: number;
+      explicacao: string;
+    } | null;
+    dasExcedenteProjetado?: {
+      cenario: 'sem_excedente' | 'tolerancia' | 'desenquadre_retroativo';
+      baseCalculo: number;
+      aliquota: number;
+      anexo: string;
+      valorExtra: number;
+      explicacao: string;
+    } | null;
   } | null;
   topClientes: { nome: string; total: number }[];
   topDespesas: { categoria: string; total: number }[];
@@ -110,6 +126,7 @@ export default function AppHome() {
     receitaBruta: number;
     aberto: boolean;
     diasRestantes: number | null;
+    jaDeclarado?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -349,9 +366,10 @@ export default function AppHome() {
         </Link>
       )}
 
-      {/* Alerta DASN-SIMEI: aparece se MEI dentro do prazo (jan-mai) e teve
-          receita no ano anterior. Urgencia varia conforme dias restantes. */}
-      {dasn && dasn.aberto && dasn.receitaBruta > 0 && (
+      {/* Alerta DASN-SIMEI: aparece se MEI dentro do prazo (jan-mai), teve
+          receita no ano anterior, e ainda nao entregou. Some quando o usuario
+          marca como declarada (DasnRecibo no historico). */}
+      {dasn && dasn.aberto && dasn.receitaBruta > 0 && !dasn.jaDeclarado && (
         <Link
           href="/app/dasn"
           className={`block rounded-3xl p-5 mb-4 shadow-soft transition hover:scale-[1.02] active:scale-95 animate-pop-in ${
@@ -536,6 +554,38 @@ export default function AppHome() {
                 Projecao do ano: R$ {data.meiProjecao.projecaoAnual.toFixed(0)} (media de R$ {data.meiProjecao.mediaMensal.toFixed(0)}/mes nos ultimos meses)
               </div>
 
+              {/* DAS de excedente: ja passou do teto. Mostra o valor extra
+                  estimado pra que o usuario nao seja pego de surpresa. */}
+              {data.meiProjecao.dasExcedente && data.meiProjecao.dasExcedente.valorExtra > 0 && (
+                <div className="bg-white/70 border border-current/30 rounded-xl p-3 mt-3">
+                  <div className="font-bold text-sm mb-1">
+                    💸 DAS extra estimado: {formatBRL(data.meiProjecao.dasExcedente.valorExtra)}
+                  </div>
+                  <div className="text-[11px] leading-relaxed opacity-80">
+                    {data.meiProjecao.dasExcedente.explicacao}
+                  </div>
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    Base: {formatBRL(data.meiProjecao.dasExcedente.baseCalculo)} × {(data.meiProjecao.dasExcedente.aliquota * 100).toFixed(2)}% (Anexo {data.meiProjecao.dasExcedente.anexo}). Estimativa.
+                  </div>
+                </div>
+              )}
+
+              {/* DAS de excedente projetado: ainda nao passou, mas no ritmo
+                  atual vai passar. Mostrar so quando o real ainda nao passou
+                  pra nao duplicar com o card acima. */}
+              {!data.meiProjecao.dasExcedente &&
+                data.meiProjecao.dasExcedenteProjetado &&
+                data.meiProjecao.dasExcedenteProjetado.valorExtra > 0 && (
+                <div className="bg-white/70 border border-current/30 rounded-xl p-3 mt-3">
+                  <div className="font-bold text-sm mb-1">
+                    🔮 DAS extra projetado: ~{formatBRL(data.meiProjecao.dasExcedenteProjetado.valorExtra)}
+                  </div>
+                  <div className="text-[11px] leading-relaxed opacity-80">
+                    Se mantiver o ritmo, no fim do ano voce paga isso de DAS extra alem do MEI.
+                  </div>
+                </div>
+              )}
+
               {/* Sugestao de contador parceiro: so aparece nos status mais
                   serios. Sair do MEI/migrar pra Simples e quando contador
                   vira praticamente obrigatorio. */}
@@ -673,6 +723,23 @@ export default function AppHome() {
         className="block bg-white border-2 border-primary-200 hover:border-primary-400 rounded-2xl p-3 text-center text-primary-700 text-sm font-medium transition mt-3"
       >
         📋 DASN-SIMEI (declaracao anual) →
+      </Link>
+
+      <Link
+        href="/app/indique"
+        className="block bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 rounded-2xl p-4 text-white transition mt-3 shadow-[0_8px_24px_-8px_rgba(168,85,247,0.6)] active:scale-[0.98]"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-left">
+            <div className="text-sm font-extrabold">
+              🎁 Ganhe 30 dias Pro grátis
+            </div>
+            <div className="text-xs text-white/90 mt-0.5">
+              Indique um amigo que assinar
+            </div>
+          </div>
+          <span className="text-lg font-extrabold">→</span>
+        </div>
       </Link>
 
       {/* Indicador discreto de saude quando esta saudavel */}

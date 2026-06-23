@@ -339,6 +339,17 @@ export default function PerfilPage() {
           <span className="text-white">›</span>
         </Link>
         <Link
+          href="/app/indique"
+          className="flex items-center gap-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl p-4 transition shadow-[0_8px_24px_-8px_rgba(168,85,247,0.6)] hover:scale-105 active:scale-95"
+        >
+          <span className="text-2xl">🎁</span>
+          <div className="flex-1">
+            <span className="font-bold">Indique e ganhe 30 dias Pro</span>
+            <div className="text-xs text-white/90">Compartilhe seu link e fature meses grátis</div>
+          </div>
+          <span className="text-white">›</span>
+        </Link>
+        <Link
           href="/onboarding/upload"
           className="flex items-center gap-3 bg-white border border-gray-200 hover:border-secondary-400 rounded-2xl p-4 transition shadow-soft"
         >

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
+import { reportarConversaoIndicacao } from '@/lib/referral';
 import type Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -157,6 +158,14 @@ export async function POST(req: NextRequest) {
             planUntil: getPeriodEnd(sub),
           },
         });
+
+        // Recompensa de indicacao: idempotente via referralRewardedAt.
+        // invoice.paid eh o sinal certo (renovacoes nao premiam de novo).
+        try {
+          await reportarConversaoIndicacao(userId);
+        } catch (err: any) {
+          console.error('[stripe webhook] referral falhou:', err?.message);
+        }
         break;
       }
 

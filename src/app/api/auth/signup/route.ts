@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { getCookieOptions, getUserCookieName } from '@/lib/session';
 import { hashPassword, normalizeEmail } from '@/lib/auth';
+import { lookupReferrer } from '@/lib/referral';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,11 @@ const schema = z.object({
   email: z.string().trim().email('E-mail invalido.'),
   password: z.string().min(6, 'A senha precisa ter ao menos 6 caracteres.').max(200),
   profissao: z.string().optional(),
+  ref: z.string().trim().max(16).optional(),
+  // Origem do clique de indicacao (share/copy/whatsapp/link). Persistido
+  // pra medir qual canal converte melhor. Limitado a 32 chars pra evitar
+  // injecao de strings gigantes de UTM mal-formado.
+  utmMedium: z.string().trim().max(32).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,6 +33,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Resolve indicador antes de criar (evita gravar codigo invalido).
+    const referredById = data.ref ? await lookupReferrer(data.ref) : null;
+
     const passwordHash = hashPassword(data.password);
     const user = await prisma.user.create({
       data: {
@@ -34,6 +43,10 @@ export async function POST(req: NextRequest) {
         passwordHash,
         name: data.name.trim(),
         profissao: data.profissao,
+        referredById,
+        // So persiste utmMedium se a conta veio mesmo de uma indicacao
+        // valida — utm sem ref nao significa nada pro programa.
+        referralUtmMedium: referredById ? data.utmMedium ?? null : null,
       },
     });
 

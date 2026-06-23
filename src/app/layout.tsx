@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { cookies } from 'next/headers';
 import './globals.css';
 import PWARegister from '@/components/PWARegister';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
+import PostHogProvider from '@/components/PostHogProvider';
+import BetaStripGate from '@/components/BetaStripGate';
 
 /**
  * URL canonica do app. Usa env quando configurada (apontar pra dominio
@@ -99,6 +103,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const logado = !!cookies().get('grana_uid')?.value;
   return (
     <html lang="pt-BR">
       <head>
@@ -117,13 +122,17 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen font-sans">
-        <div className="mx-auto max-w-md min-h-screen flex flex-col relative overflow-hidden">
-          {children}
-        </div>
-        <PWARegister />
-        {/* Analytics e Speed Insights da Vercel — gratis, ja embutidos no plano */}
-        <Analytics />
-        <SpeedInsights />
+        <PostHogProvider>
+          <BetaStripGate logado={logado} />
+          <div className="mx-auto max-w-md min-h-screen flex flex-col relative overflow-hidden">
+            {children}
+          </div>
+          <PWARegister />
+          <WhatsAppFloat />
+          {/* Analytics e Speed Insights da Vercel — gratis, ja embutidos no plano */}
+          <Analytics />
+          <SpeedInsights />
+        </PostHogProvider>
       </body>
     </html>
   );

@@ -16,6 +16,7 @@
  *  - Se a projecao passa do teto, vira alerta.
  */
 import { prisma } from './db';
+import { calcularDASExcedente, type DASExcedente } from './das';
 
 export const MEI_TETO = 81000;
 export const MEI_TETO_TOLERANCIA = 97200; // teto + 20%
@@ -30,6 +31,11 @@ export type MEIProjection = {
   percentTolerancia: number;  // % sobre R$ 97.200
   status: MEIStatus;
   mensagem: string;
+  /** Estimativa do DAS extra do excedente. So preenchido quando o
+   *  faturamento ja passou ou tende a passar do teto MEI. */
+  dasExcedente?: DASExcedente | null;
+  /** Mesma estimativa para a projecao de fim de ano (cenario futuro). */
+  dasExcedenteProjetado?: DASExcedente | null;
 };
 
 export type MEIStatus =
@@ -48,6 +54,13 @@ export async function getMEIProjection(
 
   const yearStart = new Date(ano, 0, 1);
   const yearEnd = new Date(ano + 1, 0, 1);
+
+  // Atividade do MEI pra escolher o anexo no calculo do excedente.
+  const userInfo = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { meiAtividade: true },
+  });
+  const meiAtividade = userInfo?.meiAtividade ?? null;
 
   // Faturamento total do ano
   const yearAgg = await prisma.transaction.aggregate({
@@ -115,5 +128,16 @@ export async function getMEIProjection(
     percentTolerancia: Math.min(200, percentTolerancia),
     status,
     mensagem,
+    // Excedente "hoje": baseado no que ja foi faturado.
+    dasExcedente:
+      yearReceita > MEI_TETO
+        ? calcularDASExcedente({ yearReceita, meiAtividade })
+        : null,
+    // Excedente projetado pro fim do ano. Util pra avisar o usuario
+    // do tamanho da conta caso o ritmo se mantenha.
+    dasExcedenteProjetado:
+      projecaoAnual > MEI_TETO
+        ? calcularDASExcedente({ yearReceita: projecaoAnual, meiAtividade })
+        : null,
   };
 }

@@ -72,9 +72,14 @@ export default function AdminMetricsPage() {
             Quanto cada camada está resolvendo, custo de IA e taxa de correção do usuário.
           </p>
         </div>
-        <Link href="/admin/parceiros" className="text-sm text-purple-600 hover:underline">
-          ← Parceiros
-        </Link>
+        <div className="flex gap-3 text-sm">
+          <Link href="/admin/funil" className="text-purple-600 hover:underline">
+            Funil
+          </Link>
+          <Link href="/admin/parceiros" className="text-purple-600 hover:underline">
+            Parceiros
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-6">

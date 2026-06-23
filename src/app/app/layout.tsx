@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import WelcomeTour from '@/components/WelcomeTour';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex-1 flex flex-col pb-24 bg-gradient-to-b from-white to-purple-50/30 min-h-screen">
       {children}
+      <WelcomeTour />
       <nav className="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white/95 backdrop-blur border-t border-gray-100 z-30 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.08)]">
         <div className="grid grid-cols-5 text-center items-end">
           <Link href="/app" className="py-3 transition group">

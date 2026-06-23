@@ -45,6 +45,37 @@ export default function PlanBanner() {
 
   // Trial ativo
   if (s.trialActive) {
+    // Modo URGENTE: faltam 3 dias ou menos. Banner muda de cor e tom pra
+    // pressionar conversão (sem cair em desespero).
+    const urgente = s.trialDaysLeft <= 3;
+
+    if (urgente) {
+      const horasFaltando = s.trialEndsAt
+        ? Math.max(0, Math.ceil((new Date(s.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60)))
+        : null;
+
+      return (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-3 mb-4 flex items-center justify-between gap-3 shadow-[0_4px_16px_-4px_rgba(245,158,11,0.4)]">
+          <div className="text-sm min-w-0">
+            <div className="font-extrabold text-amber-900 flex items-center gap-1.5">
+              ⏰ Seu trial Pro acaba {s.trialDaysLeft === 0 ? 'hoje' : s.trialDaysLeft === 1 ? 'amanha' : `em ${s.trialDaysLeft} dias`}
+            </div>
+            <div className="text-amber-800 text-xs truncate">
+              {s.trialDaysLeft === 0 && horasFaltando !== null
+                ? `Faltam ~${horasFaltando}h. Depois disso volta pro Free (20/mes).`
+                : 'Garanta Pro por R$ 17,90/mes antes de virar Free.'}
+            </div>
+          </div>
+          <Link
+            href="/app/upgrade"
+            className="text-xs font-extrabold bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-2.5 rounded-xl hover:from-amber-500 hover:to-orange-500 transition shrink-0 shadow-[0_4px_12px_-2px_rgba(245,158,11,0.5)] active:scale-95"
+          >
+            Garantir Pro →
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 border border-violet-200 rounded-2xl p-3 mb-4 flex items-center justify-between gap-3">
         <div className="text-sm">

@@ -256,6 +256,7 @@ export default function AdminParceirosPage() {
           <p className="text-xs text-gray-500">{parceiros.length} cadastrado{parceiros.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/admin/funil" className="text-xs text-purple-600 underline">Funil</Link>
           <Link href="/admin/metrics" className="text-xs text-purple-600 underline">Métricas</Link>
           <button onClick={logout} className="text-xs text-gray-500 underline">Sair</button>
         </div>
