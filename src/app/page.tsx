@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import StickyCTA from '@/components/StickyCTA';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,7 @@ export default async function HomePage() {
               Pra MEI que quer parar de adivinhar
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6">
               Quanto você
               <br/>
               <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
@@ -86,7 +87,7 @@ export default async function HomePage() {
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/70 mb-8 max-w-xl leading-relaxed">
+            <p className="text-base md:text-xl text-white/70 mb-8 max-w-xl leading-relaxed">
               Você reconhece isso: o dinheiro entra, mas no fim do mês some.
               O <span className="text-white font-semibold">Grana</span> mostra
               quanto sobra de verdade — depois do imposto, do material e da conta de luz.
@@ -108,7 +109,7 @@ export default async function HomePage() {
               </a>
             </div>
 
-            <div className="flex items-center gap-6 text-sm text-white/60">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-white/60 mb-6">
               <div className="flex items-center gap-2">
                 <span className="text-emerald-400">✓</span> 7 dias grátis
               </div>
@@ -117,6 +118,24 @@ export default async function HomePage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-emerald-400">✓</span> Cancela quando quiser
+              </div>
+            </div>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/50">
+              <div className="flex items-center gap-1.5">
+                <span>🔒</span>
+                <span>Dados criptografados</span>
+              </div>
+              <span className="text-white/20">•</span>
+              <div className="flex items-center gap-1.5">
+                <span>🇧🇷</span>
+                <span>LGPD</span>
+              </div>
+              <span className="text-white/20">•</span>
+              <div className="flex items-center gap-1.5">
+                <span>💳</span>
+                <span>Pagamento via Stripe</span>
               </div>
             </div>
           </div>
@@ -289,6 +308,48 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ============ PARA QUEM ============ */}
+      <section className="relative bg-white py-20 md:py-24">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center mb-12">
+            <div className="inline-block px-3 py-1 rounded-full bg-cyan-100 text-cyan-700 text-xs font-bold uppercase tracking-wider mb-3">
+              Para quem
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+              MEI que fatura no PIX,
+              <br/>
+              <span className="bg-gradient-to-r from-cyan-600 to-violet-600 bg-clip-text text-transparent">
+                trabalha sozinho
+              </span>
+            </h2>
+            <p className="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">
+              Feito pra quem ganha pela mão, no celular, sem tempo de virar contador.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            {[
+              {emoji: '💅', titulo: 'Manicure', sub: 'Nail designer, esteticista'},
+              {emoji: '🚗', titulo: 'Motorista', sub: 'Uber, 99, entrega'},
+              {emoji: '🎨', titulo: 'Freelancer', sub: 'Designer, dev, social'},
+              {emoji: '🍰', titulo: 'Doceira', sub: 'Confeitaria, marmita'},
+              {emoji: '💪', titulo: 'Personal', sub: 'Trainer, professor'},
+              {emoji: '✂️', titulo: 'Cabeleireira', sub: 'Salão, barbearia'},
+            ].map(p => (
+              <div key={p.titulo} className="bg-gradient-to-br from-slate-50 to-white border border-gray-100 rounded-2xl p-4 text-center hover:border-violet-200 hover:shadow-lg transition group">
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">{p.emoji}</div>
+                <div className="font-extrabold text-gray-900 text-sm mb-0.5">{p.titulo}</div>
+                <div className="text-[11px] text-gray-500 leading-tight">{p.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-gray-500 mt-8">
+            Não tá na lista? Funciona pra qualquer MEI que recebe PIX, paga DAS e tem limite de R$ 81 mil.
+          </p>
         </div>
       </section>
 
@@ -755,7 +816,7 @@ export default async function HomePage() {
       </section>
 
       {/* ============ CTA FINAL ESCURO ============ */}
-      <section className="relative overflow-hidden bg-black text-white py-24 md:py-32">
+      <section id="cta-final" className="relative overflow-hidden bg-black text-white py-24 md:py-32">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl" style={{background: 'radial-gradient(circle, rgba(139,92,246,0.4) 0%, rgba(236,72,153,0.2) 35%, transparent 70%)'}}/>
         </div>
@@ -808,6 +869,8 @@ export default async function HomePage() {
           </div>
         </div>
       </footer>
+
+      <StickyCTA />
     </main>
   );
 }
